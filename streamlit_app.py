@@ -88,10 +88,10 @@ if st.button("Predict"):
             scaled_data = scaler.transform(latest_data)
 
             # Predictions
-            ridge_prediction = ridge_model.predict(scaled_data)[0]
-            xgb_prediction = xgb_model.predict(scaled_data)[0]
+            ridge_prediction = ridge_model.predict(scaled_data)[0]  # Ridge expects 2D input
+            xgb_prediction = xgb_model.predict(scaled_data)[0]      # XGBoost expects 2D input
 
-            # Reshape for LSTM
+            # Reshape for LSTM (3D input: samples, timesteps, features)
             lstm_data = scaled_data.reshape((scaled_data.shape[0], scaled_data.shape[1], 1))
             lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
 
