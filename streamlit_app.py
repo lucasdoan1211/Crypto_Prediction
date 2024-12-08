@@ -6,6 +6,8 @@ import joblib
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
+from tensorflow.keras.models import load_model  # Correct way to load .h5 models
+
 
 # Load Pre-trained Models and Components
 scaler = joblib.load("scaler.pkl")
