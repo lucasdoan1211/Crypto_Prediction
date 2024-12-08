@@ -12,8 +12,7 @@ scaler = joblib.load("scaler.pkl")
 feature_selector = joblib.load("feature_selector.pkl")
 ridge_model = joblib.load("model_ridge.pkl")
 xgb_model = joblib.load("model_xgb.pkl")
-lstm_model = joblib.load("model_lstm.h5")  # Ensure LSTM model is saved as .h5 file
-
+lstm_model = load_model("model_lstm.h5")
 # Streamlit App Title
 st.title("Crypto Price Prediction with Feature Selection")
 st.write("This app dynamically selects features using Recursive Feature Elimination (RFE) and predicts the next day's cryptocurrency closing price using Ridge, XGBoost, and LSTM models.")
