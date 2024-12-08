@@ -25,8 +25,6 @@ try:
 except Exception as e:
     st.error(f"Error loading models or scalers: {e}")
     st.stop()
-    print(f"Shape of data['Close']: {data['Close'].shape}")
-    print(f"Type of data['Close']: {type(data['Close'])}")
 
 # Streamlit App Title
 st.title("Crypto Price Prediction with Feature Selection")
@@ -51,9 +49,9 @@ if st.button("Predict"):
         # Feature Engineering
         data['Date'] = pd.to_datetime(data.index)
         data.set_index('Date', inplace=True)
-
-        # Ensure Close is a 1D Series
-        data['Close'] = pd.Series(data['Close'].to_numpy().flatten(), index=data.index)
+        
+        # Ensure Close column is correctly formatted
+        data['Close'] = data['Close'].astype(float)
 
         # Moving Averages (SMA and EMA)
         data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
@@ -86,8 +84,8 @@ if st.button("Predict"):
         data['Daily_Return'] = data['Close'].pct_change()
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
 
-        
-        data.fillna(data.median())
+        # Fill missing values
+        data.fillna(data.median(), inplace=True)
 
         # Define Features and Target
         features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
