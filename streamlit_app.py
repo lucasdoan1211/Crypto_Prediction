@@ -17,7 +17,7 @@ scaler = joblib.load("scaler.pkl")
 
 # Streamlit App Title
 st.title("Crypto Price Prediction")
-st.write("This app predicts the next day's closing price for a given cryptocurrency based on 1 year of historical data.")
+st.write("This app predicts the next day's closing price for a given cryptocurrency using Ridge Regression, XGBoost, and LSTM models.")
 
 # Input Section
 ticker = st.text_input("Enter the Cryptocurrency Ticker (e.g., ONDO-USD):", value="BTC-USD")
@@ -33,7 +33,7 @@ if st.button("Predict"):
             st.error("No data found for the given ticker. Please try another ticker.")
         else:
             st.write("Data loaded successfully!")
-            
+
             # Feature Engineering
             data['Date'] = pd.to_datetime(data.index)
             data.set_index('Date', inplace=True)
@@ -80,6 +80,8 @@ if st.button("Predict"):
                 'Close_Lag_7', 'Volume_Lag_1', 'Volume_Lag_3', 'Volume_Lag_7', 
                 'Rolling_Mean_7', 'Rolling_Std_7', 'Daily_Return', 'Log_Return'
             ]
+
+            # Extract and reshape the latest data
             latest_data = data[features].iloc[-1].values.reshape(1, -1)
 
             # Scale Features
@@ -88,6 +90,8 @@ if st.button("Predict"):
             # Predictions
             ridge_prediction = ridge_model.predict(scaled_data)[0]
             xgb_prediction = xgb_model.predict(scaled_data)[0]
+
+            # Reshape for LSTM
             lstm_data = scaled_data.reshape((scaled_data.shape[0], scaled_data.shape[1], 1))
             lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
 
