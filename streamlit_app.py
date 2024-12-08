@@ -17,7 +17,7 @@ try:
     scaler = joblib.load("scaler.pkl")
     feature_selector = joblib.load("feature_selector.pkl")
     ridge_model = joblib.load("model_ridge.pkl")
-    xgb_model = joblib.load("model_xgb.pkl") 
+    xgb_model = joblib.load("model_xgb.pkl")
     xgb_model.get_booster().save_model("model_xgb.json")
     lstm_model = load_model("model_lstm.h5")
     lstm_model.compile(optimizer='adam', loss='mse', metrics=['mae'])
@@ -49,8 +49,9 @@ if st.button("Predict"):
         # Feature Engineering
         data['Date'] = pd.to_datetime(data.index)
         data.set_index('Date', inplace=True)
-        
-        data['Close'] = data['Close'].to_numpy().flatten()
+
+        # Ensure Close is a 1D Series
+        data['Close'] = pd.Series(data['Close'].to_numpy().flatten(), index=data.index)
 
         # Moving Averages (SMA and EMA)
         data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
@@ -68,23 +69,23 @@ if st.button("Predict"):
         data['BB_Width'] = data['BB_High'] - data['BB_Low']
 
         # Average True Range (ATR)
-        data['ATR'] = pd.Series(data['High']).rolling(window=14).max() - pd.Series(data['Low']).rolling(window=14).min()
+        data['ATR'] = (data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min())
 
         # Lag Features
         for lag in [1, 3, 7]:
-            data[f'Close_Lag_{lag}'] = pd.Series(data['Close']).shift(lag)
-            data[f'Volume_Lag_{lag}'] = pd.Series(data['Volume']).shift(lag)
+            data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
+            data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
 
-        # Ensure 1D array for rolling operations
-        data['Rolling_Mean_7'] = pd.Series(data['Close']).rolling(window=7).mean()
-        data['Rolling_Std_7'] = pd.Series(data['Close']).rolling(window=7).std()
+        # Rolling Statistics
+        data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
+        data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
 
         # Returns
         data['Daily_Return'] = data['Close'].pct_change()
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
 
-        # Drop NaN Values
-        data.dropna(inplace=True)
+        
+        data.fillna(data.median())
 
         # Define Features and Target
         features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
