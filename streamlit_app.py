@@ -68,16 +68,16 @@ if st.button("Predict"):
         data['BB_Width'] = data['BB_High'] - data['BB_Low']
 
         # Average True Range (ATR)
-        data['ATR'] = data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min()
+        data['ATR'] = pd.Series(data['High']).rolling(window=14).max() - pd.Series(data['Low']).rolling(window=14).min()
 
         # Lag Features
         for lag in [1, 3, 7]:
-            data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
-            data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
+            data[f'Close_Lag_{lag}'] = pd.Series(data['Close']).shift(lag)
+            data[f'Volume_Lag_{lag}'] = pd.Series(data['Volume']).shift(lag)
 
         # Ensure 1D array for rolling operations
-        data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
-        data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
+        data['Rolling_Mean_7'] = pd.Series(data['Close']).rolling(window=7).mean()
+        data['Rolling_Std_7'] = pd.Series(data['Close']).rolling(window=7).std()
 
         # Returns
         data['Daily_Return'] = data['Close'].pct_change()
