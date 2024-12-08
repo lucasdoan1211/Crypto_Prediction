@@ -20,6 +20,8 @@ try:
     xgb_model = joblib.load("model_xgb.pkl") 
     xgb_model.get_booster().save_model("model_xgb.json")
     lstm_model = load_model("model_lstm.h5")
+    lstm_model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+
 except Exception as e:
     st.error(f"Error loading models or scalers: {e}")
     st.stop()
