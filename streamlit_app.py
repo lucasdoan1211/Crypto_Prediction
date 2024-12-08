@@ -109,6 +109,9 @@ if st.button("Predict"):
 
     except Exception as e:
             st.error(f"An error occurred: {e}")
+            st.write(f"Shape of `scaled_data`: {scaled_data.shape}")
+            st.write(f"Shape of `selected_data`: {selected_data.shape}")
+            st.write(f"Shape of `latest_data`: {latest_data.shape}")
 
 
 
