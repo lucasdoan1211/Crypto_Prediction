@@ -8,15 +8,23 @@ from sklearn.linear_model import Ridge
 import pickle
 import yfinance as yf
 from datetime import datetime, timedelta
+import os
 
 # Load pre-trained models and scaler
 @st.cache_resource
 def load_artifacts():
-    lstm_model = load_model("lstm_model.h5")
-    xgb_model = pickle.load(open("xgb_model.pkl", "rb"))
-    ridge_model = pickle.load(open("ridge_model.pkl", "rb"))
-    scaler = pickle.load(open("scaler.pkl", "rb"))
-    return lstm_model, xgb_model, ridge_model, scaler
+    try:
+        lstm_model = load_model("lstm_model.h5")
+        xgb_model = pickle.load(open("xgb_model.pkl", "rb"))
+        ridge_model = pickle.load(open("ridge_model.pkl", "rb"))
+        scaler = pickle.load(open("scaler.pkl", "rb"))
+        return lstm_model, xgb_model, ridge_model, scaler
+    except FileNotFoundError as e:
+        st.error(f"Required file not found: {e}")
+        st.stop()
+    except Exception as e:
+        st.error(f"Error loading artifacts: {e}")
+        st.stop()
 
 lstm_model, xgb_model, ridge_model, scaler = load_artifacts()
 
@@ -35,6 +43,10 @@ if st.sidebar.button("Fetch Data and Predict Next Day"):
         data = yf.download(ticker, start=start_date, end=end_date)
         st.write(f"### Data for {ticker} (Last 1 Year)")
         st.write(data.tail())
+
+        if data.empty:
+            st.error("No data fetched. Please check the ticker symbol or try again later.")
+            st.stop()
 
         # Preprocessing
         try:
@@ -62,6 +74,6 @@ if st.sidebar.button("Fetch Data and Predict Next Day"):
         st.write(predictions)
 
     except Exception as e:
-        st.error(f"Error fetching data: {e}")
+        st.error(f"Error fetching data or predicting: {e}")
 else:
     st.write("Click the button to fetch data and predict the next day.")
