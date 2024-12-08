@@ -112,19 +112,18 @@ if st.button("Predict"):
 
             # Prepare Latest Data for Prediction Using Selected Features
             latest_data = data[optimal_features].iloc[-1].values.reshape(1, -1)
+            st.write("Latest Data Shape Before Scaling:", latest_data.shape)
+
             scaled_data = scaler.transform(latest_data)
+            st.write("Scaled Data Shape:", scaled_data.shape)
 
             # Predictions
             ridge_prediction = ridge_model.predict(scaled_data)[0]
             xgb_prediction = xgb_model.predict(scaled_data)[0]
 
             # Reshape for LSTM (3D input: samples, timesteps, features)
-            lstm_data = scaled_data.reshape((scaled_data.shape[0], scaled_data.shape[1], 1))
+            lstm_data = scaled_data.reshape(1, 1, scaled_data.shape[1])
             lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
-
-            # Debugging Shapes
-            st.write(f"Shape of latest_data: {latest_data.shape}")
-            st.write(f"Shape of scaled_data: {scaled_data.shape}")
 
             # Display Results
             st.subheader("Predictions for Next Day Closing Price:")
