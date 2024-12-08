@@ -14,9 +14,9 @@ import os
 @st.cache_resource
 def load_artifacts():
     try:
-        lstm_model = load_model("lstm_model.h5")
-        xgb_model = pickle.load(open("xgb_model.pkl", "rb"))
-        ridge_model = pickle.load(open("ridge_model.pkl", "rb"))
+        lstm_model = load_model("model_lstm.h5")
+        xgb_model = pickle.load(open("model_xgb.pkl", "rb"))
+        ridge_model = pickle.load(open("model_ridge.pkl", "rb"))
         scaler = pickle.load(open("scaler.pkl", "rb"))
         return lstm_model, xgb_model, ridge_model, scaler
     except FileNotFoundError as e:
