@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 import joblib
-from sklearn.linear_model import Ridge
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
@@ -11,9 +10,9 @@ from ta.trend import SMAIndicator, EMAIndicator
 # Load Pre-trained Models and Components
 scaler = joblib.load("scaler.pkl")
 feature_selector = joblib.load("feature_selector.pkl")
-ridge_model = joblib.load("ridge_model.pkl")
-xgb_model = joblib.load("xgb_model.pkl")
-lstm_model = joblib.load("lstm_model.h5")  # Ensure LSTM model is saved as .h5 file
+ridge_model = joblib.load("model_ridge.pkl")
+xgb_model = joblib.load("model_xgb.pkl")
+lstm_model = joblib.load("model_lstm.h5")  # Ensure LSTM model is saved as .h5 file
 
 # Streamlit App Title
 st.title("Crypto Price Prediction with Feature Selection")
