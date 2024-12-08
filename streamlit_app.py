@@ -3,28 +3,31 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from sklearn.preprocessing import RobustScaler
+from sklearn.feature_selection import RFE
+from sklearn.model_selection import train_test_split
+from xgboost import XGBRegressor
 import joblib
 from tensorflow.keras.models import load_model
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
 
-# Load Models and Scaler
+# Load Pre-trained Models
 ridge_model = joblib.load("model_ridge.pkl")
 xgb_model = joblib.load("model_xgb.pkl")
 lstm_model = load_model("model_lstm.h5")
 scaler = joblib.load("scaler.pkl")
 
 # Streamlit App Title
-st.title("Crypto Price Prediction")
-st.write("This app predicts the next day's closing price for a given cryptocurrency using Ridge Regression, XGBoost, and LSTM models.")
+st.title("Crypto Price Prediction with Feature Selection")
+st.write("This app dynamically selects features using Recursive Feature Elimination (RFE) and predicts the next day's cryptocurrency closing price using Ridge, XGBoost, and LSTM models.")
 
 # Input Section
 ticker = st.text_input("Enter the Cryptocurrency Ticker (e.g., ONDO-USD):", value="BTC-USD")
 
 if st.button("Predict"):
     try:
-        # Fetch data from Yahoo Finance
+        # Fetch Data from Yahoo Finance
         today = pd.Timestamp.today()
         start_date = today - pd.DateOffset(years=1)
         data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=today.strftime('%Y-%m-%d'))
@@ -73,23 +76,48 @@ if st.button("Predict"):
             # Drop NaN Values
             data.dropna(inplace=True)
 
-            # Prepare Latest Data for Prediction
-            features = [
-                'Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
-                'RSI_14', 'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 
-                'Close_Lag_7', 'Volume_Lag_1', 'Volume_Lag_3', 'Volume_Lag_7', 
-                'Rolling_Mean_7', 'Rolling_Std_7', 'Daily_Return', 'Log_Return'
-            ]
+            # Define Features and Target
+            features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
+                        'RSI_14', 'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 
+                        'Close_Lag_7', 'Volume_Lag_1', 'Volume_Lag_3', 'Volume_Lag_7', 
+                        'Rolling_Mean_7', 'Rolling_Std_7', 'Daily_Return', 'Log_Return']
+            target = 'Close'
 
-            # Extract and reshape the latest data
-            latest_data = data[features].iloc[-1].values.reshape(1, -1)
+            X = data[features]
+            y = data[target]
+
+            # Split Data into Train and Test Sets
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
             # Scale Features
+            scaler = RobustScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+            X_test_scaled = scaler.transform(X_test)
+
+            # Feature Selection with RFE
+            estimator = XGBRegressor(
+                n_estimators=500,
+                max_depth=None,
+                learning_rate=0.1,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                random_state=42,
+                n_jobs=-1
+            )
+            selector = RFE(estimator=estimator, step=5)
+            selector = selector.fit(X_train_scaled, y_train)
+
+            # Optimal Features
+            optimal_features = [features[i] for i in range(len(features)) if selector.support_[i]]
+            st.write(f"Selected features: {optimal_features}")
+
+            # Prepare Latest Data for Prediction Using Selected Features
+            latest_data = data[optimal_features].iloc[-1].values.reshape(1, -1)
             scaled_data = scaler.transform(latest_data)
 
             # Predictions
-            ridge_prediction = ridge_model.predict(scaled_data)[0]  # Ridge expects 2D input
-            xgb_prediction = xgb_model.predict(scaled_data)[0]      # XGBoost expects 2D input
+            ridge_prediction = ridge_model.predict(scaled_data)[0]
+            xgb_prediction = xgb_model.predict(scaled_data)[0]
 
             # Reshape for LSTM (3D input: samples, timesteps, features)
             lstm_data = scaled_data.reshape((scaled_data.shape[0], scaled_data.shape[1], 1))
