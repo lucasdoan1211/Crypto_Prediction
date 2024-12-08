@@ -17,7 +17,7 @@ try:
     scaler = joblib.load("scaler.pkl")
     feature_selector = joblib.load("feature_selector.pkl")
     ridge_model = joblib.load("model_ridge.pkl")
-    xgb_model = joblib.load("model_xgb.pkl")
+    xgb_model = joblib.load("model_xgb.pkl") 
     lstm_model = load_model("model_lstm.h5")
 except Exception as e:
     st.error(f"Error loading models or scalers: {e}")
@@ -35,7 +35,7 @@ if st.button("Predict"):
         # Fetch Data from Yahoo Finance
         today = pd.Timestamp.today()
         start_date = today - pd.DateOffset(years=1)
-        data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=today.strftime('%Y-%m-%d'))
+        data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=today.strftime('%Y-%m-%d'), progress=False)
 
         if data.empty:
             st.error("No data found for the given ticker. Please try another ticker.")
@@ -48,16 +48,16 @@ if st.button("Predict"):
         data.set_index('Date', inplace=True)
 
         # Moving Averages (SMA and EMA)
-        data['SMA_7'] = SMAIndicator(close=data['Close'].to_numpy().flatten(), window=7).sma_indicator()
-        data['SMA_30'] = SMAIndicator(close=data['Close'].to_numpy().flatten(), window=30).sma_indicator()
-        data['EMA_7'] = EMAIndicator(close=data['Close'].to_numpy().flatten(), window=7).ema_indicator()
-        data['EMA_30'] = EMAIndicator(close=data['Close'].to_numpy().flatten(), window=30).ema_indicator()
+        data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
+        data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
+        data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
+        data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
 
         # Relative Strength Index (RSI)
-        data['RSI_14'] = RSIIndicator(close=data['Close'].to_numpy().flatten(), window=14).rsi()
+        data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
 
         # Bollinger Bands
-        bb_indicator = BollingerBands(close=data['Close'].to_numpy().flatten(), window=20, window_dev=2)
+        bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
         data['BB_High'] = bb_indicator.bollinger_hband()
         data['BB_Low'] = bb_indicator.bollinger_lband()
         data['BB_Width'] = data['BB_High'] - data['BB_Low']
