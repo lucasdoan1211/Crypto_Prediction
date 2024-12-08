@@ -80,7 +80,7 @@ if st.button("Predict"):
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
 
         # Drop NaN Values
-        data.dropna(inplace=True)
+        data.fillna(data.fillna(data.median())
 
         # Define Features and Target
         features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
@@ -115,14 +115,11 @@ if st.button("Predict"):
         st.write(f"Shape of LSTM input: {lstm_data.shape}")
         lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
 
-
-        if st.button("Predict"):
-            try:
-                st.subheader("Predictions for Next Day Closing Price:")
-                st.write(f"**Ridge Regression Prediction:** ${ridge_prediction:.2f}")
-                st.write(f"**XGBoost Prediction:** ${xgb_prediction:.2f}")
-                st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
-            except Exception as e:
-                st.error(f"Error during prediction: {e}")
-
-
+        # Display Predictions
+        st.subheader("Predictions for Next Day Closing Price:")
+        st.write(f"**Ridge Regression Prediction:** ${ridge_prediction:.2f}")
+        st.write(f"**XGBoost Prediction:** ${xgb_prediction:.2f}")
+        st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
+        
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
