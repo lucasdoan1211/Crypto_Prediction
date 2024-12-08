@@ -80,7 +80,7 @@ if st.button("Predict"):
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
 
         # Drop NaN Values
-        data.fillna(data.fillna(data.median())
+        data.fillna(data.fillna(data.median()))
 
         # Define Features and Target
         features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
