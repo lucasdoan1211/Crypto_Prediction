@@ -86,4 +86,4 @@ if st.sidebar.button("Fetch Data"):
     except Exception as e:
         st.error(f"Error fetching data: {e}")
 else:
-    st.write("Click the button to fetch data for the last
+    st.write("Click the button to fetch data for the last 1 year.")
