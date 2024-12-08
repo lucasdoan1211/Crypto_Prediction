@@ -5,7 +5,6 @@ from sklearn.preprocessing import RobustScaler
 from tensorflow.keras.models import load_model
 from xgboost import XGBRegressor
 from sklearn.linear_model import Ridge
-import matplotlib.pyplot as plt
 import pickle
 import yfinance as yf
 from datetime import datetime, timedelta
@@ -61,14 +60,6 @@ if st.sidebar.button("Fetch Data and Predict Next Day"):
             "LSTM Prediction": lstm_prediction
         }
         st.write(predictions)
-
-        # Visualization
-        st.write("### Visualization of Next-Day Predictions")
-
-        fig, ax = plt.subplots()
-        ax.bar(predictions.keys(), predictions.values(), color=['blue', 'orange', 'green'])
-        ax.set_title("Next-Day Predictions")
-        st.pyplot(fig)
 
     except Exception as e:
         st.error(f"Error fetching data: {e}")
