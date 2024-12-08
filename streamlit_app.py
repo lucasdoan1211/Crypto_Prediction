@@ -86,18 +86,19 @@ if st.button("Predict"):
 
             # Select Features Dynamically
             selected_data = feature_selector.transform(scaled_data)
+            
+            st.write(f"Shape of scaled_data: {scaled_data.shape}")
 
-            # Prepare Latest Data for Prediction
-            latest_data = selected_data[-1].reshape(1, -1)
+            latest_data_2d = latest_data.reshape(1, -1)
+            ridge_prediction = ridge_model.predict(latest_data_2d)[0]
+            xgb_prediction = xgb_model.predict(latest_data_2d)[0]
 
-            # Ridge Regression Prediction
-            ridge_prediction = ridge_model.predict(latest_data)[0]
 
-            # XGBoost Prediction
-            xgb_prediction = xgb_model.predict(latest_data)[0]
-
+            
             # LSTM Prediction (requires 3D input)
+            
             lstm_data = latest_data.reshape(1, 1, latest_data.shape[1])
+            st.write(f"Shape of LSTM input: {lstm_data.shape}")
             lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
 
             # Display Results
@@ -107,4 +108,8 @@ if st.button("Predict"):
             st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
 
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+            st.error(f"An error occurred: {e}")
+
+
+
+
