@@ -18,6 +18,7 @@ try:
     feature_selector = joblib.load("feature_selector.pkl")
     ridge_model = joblib.load("model_ridge.pkl")
     xgb_model = joblib.load("model_xgb.pkl") 
+    xgb_model.get_booster().save_model("model_xgb.json")
     lstm_model = load_model("model_lstm.h5")
 except Exception as e:
     st.error(f"Error loading models or scalers: {e}")
