@@ -1,130 +1,89 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
-import yfinance as yf
+import numpy as np
 from sklearn.preprocessing import RobustScaler
-from sklearn.feature_selection import RFE
-from sklearn.model_selection import train_test_split
-from xgboost import XGBRegressor
-import joblib
 from tensorflow.keras.models import load_model
-from ta.volatility import BollingerBands
-from ta.momentum import RSIIndicator
-from ta.trend import SMAIndicator, EMAIndicator
+from xgboost import XGBRegressor
+from sklearn.linear_model import Ridge
+import matplotlib.pyplot as plt
+import pickle
+import yfinance as yf
+from datetime import datetime, timedelta
 
-# Load Pre-trained Models
-try:
-    scaler = joblib.load("scaler.pkl")
-    feature_selector = joblib.load("feature_selector.pkl")
-    ridge_model = joblib.load("model_ridge.pkl")
-    xgb_model = joblib.load("model_xgb.pkl")
-    xgb_model.get_booster().save_model("model_xgb.json")
-    lstm_model = load_model("model_lstm.h5")
-    lstm_model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+# Load pre-trained models and scaler
+@st.cache_resource
+def load_artifacts():
+    lstm_model = load_model("lstm_model.h5")
+    xgb_model = pickle.load(open("xgb_model.pkl", "rb"))
+    ridge_model = pickle.load(open("ridge_model.pkl", "rb"))
+    scaler = pickle.load(open("scaler.pkl", "rb"))
+    return lstm_model, xgb_model, ridge_model, scaler
 
-except Exception as e:
-    st.error(f"Error loading models or scalers: {e}")
-    st.stop()
+lstm_model, xgb_model, ridge_model, scaler = load_artifacts()
 
-# Streamlit App Title
-st.title("Crypto Price Prediction with Feature Selection")
-st.write("This app dynamically selects features and predicts the next day's cryptocurrency closing price using Ridge, XGBoost, and LSTM models.")
+# Streamlit UI
+st.title("Time-Series Prediction Deployment")
+st.sidebar.header("Data Source")
 
-# Input Section
-ticker = st.text_input("Enter the Cryptocurrency Ticker (e.g., BTC-USD):", value="BTC-USD")
+# Input for ticker symbol with fixed 1-year range
+ticker = st.sidebar.text_input("Enter Ticker Symbol", "AAPL")
+end_date = datetime.today()
+start_date = end_date - timedelta(days=365)
 
-if st.button("Predict"):
+if st.sidebar.button("Fetch Data"):
     try:
-        # Fetch Data from Yahoo Finance
-        today = pd.Timestamp.today()
-        start_date = today - pd.DateOffset(years=1)
-        data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=today.strftime('%Y-%m-%d'), progress=False)
+        # Fetch data from Yahoo Finance
+        data = yf.download(ticker, start=start_date, end=end_date)
+        st.write(f"### Data for {ticker} (Last 1 Year)")
+        st.write(data.head())
 
-        if data.empty:
-            st.error("No data found for the given ticker. Please try another ticker.")
+        # Preprocessing
+        try:
+            data_scaled = scaler.transform(data.drop(columns=['Adj Close'], errors='ignore'))
+            X_lstm = data_scaled.reshape((data_scaled.shape[0], data_scaled.shape[1], 1))
+        except Exception as e:
+            st.error(f"Error during preprocessing: {e}")
             st.stop()
 
-        st.write("Data loaded successfully!")
+        # Predictions
+        st.write("### Predictions")
+        ridge_predictions = ridge_model.predict(data_scaled)
+        xgb_predictions = xgb_model.predict(data_scaled)
+        lstm_predictions = lstm_model.predict(X_lstm).flatten()
 
-        # Feature Engineering
-        data['Date'] = pd.to_datetime(data.index)
-        data.set_index('Date', inplace=True)
-        
-        # Ensure Close column is correctly formatted
-        data['Close'] = data['Close'].astype(float)
+        # Combine results
+        predictions = pd.DataFrame({
+            "Ridge Predictions": ridge_predictions,
+            "XGBoost Predictions": xgb_predictions,
+            "LSTM Predictions": lstm_predictions
+        }, index=data.index)
+        st.write(predictions)
 
-        # Moving Averages (SMA and EMA)
-        data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
-        data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
-        data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
-        data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
+        # Visualization
+        st.write("### Prediction Visualizations")
 
-        # Relative Strength Index (RSI)
-        data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
+        # Ridge
+        fig_ridge, ax_ridge = plt.subplots()
+        ax_ridge.plot(predictions.index, ridge_predictions, label="Ridge", marker='o')
+        ax_ridge.set_title("Ridge Predictions")
+        ax_ridge.legend()
+        st.pyplot(fig_ridge)
 
-        # Bollinger Bands
-        bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
-        data['BB_High'] = bb_indicator.bollinger_hband()
-        data['BB_Low'] = bb_indicator.bollinger_lband()
-        data['BB_Width'] = data['BB_High'] - data['BB_Low']
+        # XGBoost
+        fig_xgb, ax_xgb = plt.subplots()
+        ax_xgb.plot(predictions.index, xgb_predictions, label="XGBoost", marker='o')
+        ax_xgb.set_title("XGBoost Predictions")
+        ax_xgb.legend()
+        st.pyplot(fig_xgb)
 
-        # Average True Range (ATR)
-        data['ATR'] = (data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min())
-
-        # Lag Features
-        for lag in [1, 3, 7]:
-            data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
-            data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
-
-        # Rolling Statistics
-        data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
-        data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
-
-        # Returns
-        data['Daily_Return'] = data['Close'].pct_change()
-        data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
-
-        # Fill missing values
-        data.fillna(data.median(), inplace=True)
-
-        # Define Features and Target
-        features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
-                    'RSI_14', 'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3',
-                    'Close_Lag_7', 'Volume_Lag_1', 'Volume_Lag_3', 'Volume_Lag_7',
-                    'Rolling_Mean_7', 'Rolling_Std_7', 'Daily_Return', 'Log_Return']
-        target = 'Close'
-
-        X = data[features]
-        st.write(f"Shape of X before scaling: {X.shape}")
-
-        # Scale Features
-        scaled_data = scaler.transform(X)
-        st.write(f"Shape of scaled_data: {scaled_data.shape}")
-
-        # Feature Selection
-        selected_data = feature_selector.transform(scaled_data)
-        st.write(f"Shape of selected_data: {selected_data.shape}")
-
-        # Prepare Latest Data for Prediction
-        latest_data = selected_data[-1].reshape(1, -1)
-        st.write(f"Shape of latest_data: {latest_data.shape}")
-
-        # Ridge Prediction
-        ridge_prediction = ridge_model.predict(latest_data)[0]
-
-        # XGBoost Prediction
-        xgb_prediction = xgb_model.predict(latest_data)[0]
-
-        # LSTM Prediction (requires 3D input)
-        lstm_data = latest_data.reshape(1, 1, latest_data.shape[1])
-        st.write(f"Shape of LSTM input: {lstm_data.shape}")
-        lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
-
-        # Display Results
-        st.subheader("Predictions for Next Day Closing Price:")
-        st.write(f"**Ridge Regression Prediction:** ${ridge_prediction:.2f}")
-        st.write(f"**XGBoost Prediction:** ${xgb_prediction:.2f}")
-        st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
+        # LSTM
+        fig_lstm, ax_lstm = plt.subplots()
+        ax_lstm.plot(predictions.index, lstm_predictions, label="LSTM", marker='o')
+        ax_lstm.set_title("LSTM Predictions")
+        ax_lstm.legend()
+        st.pyplot(fig_lstm)
 
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+        st.error(f"Error fetching data: {e}")
+else:
+    st.write("Click the button to fetch data for the last
