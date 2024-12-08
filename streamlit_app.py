@@ -49,6 +49,8 @@ if st.button("Predict"):
         # Feature Engineering
         data['Date'] = pd.to_datetime(data.index)
         data.set_index('Date', inplace=True)
+        
+        data['Close'] = data['Close'].to_numpy().flatten()
 
         # Moving Averages (SMA and EMA)
         data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
@@ -69,12 +71,11 @@ if st.button("Predict"):
         data['ATR'] = data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min()
 
         # Lag Features
-        lags = [1, 3, 7]
-        for lag in lags:
-            data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
-            data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
+        for lag in [1, 3, 7]:
+        data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
+        data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
 
-        # Rolling Statistics
+        # Ensure 1D array for rolling operations
         data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
         data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
 
