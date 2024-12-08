@@ -25,6 +25,8 @@ try:
 except Exception as e:
     st.error(f"Error loading models or scalers: {e}")
     st.stop()
+    print(f"Shape of data['Close']: {data['Close'].shape}")
+    print(f"Type of data['Close']: {type(data['Close'])}")
 
 # Streamlit App Title
 st.title("Crypto Price Prediction with Feature Selection")
