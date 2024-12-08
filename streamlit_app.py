@@ -63,7 +63,7 @@ if st.button("Predict"):
         data['BB_Width'] = data['BB_High'] - data['BB_Low']
 
         # Average True Range (ATR)
-        data['ATR'] = (data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min())
+        data['ATR'] = data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min()
 
         # Lag Features
         lags = [1, 3, 7]
