@@ -72,8 +72,8 @@ if st.button("Predict"):
 
         # Lag Features
         for lag in [1, 3, 7]:
-        data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
-        data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
+            data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
+            data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
 
         # Ensure 1D array for rolling operations
         data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
