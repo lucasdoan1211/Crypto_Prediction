@@ -16,7 +16,6 @@ from ta.trend import SMAIndicator, EMAIndicator
 ridge_model = joblib.load("model_ridge.pkl")
 xgb_model = joblib.load("model_xgb.pkl")
 lstm_model = load_model("model_lstm.h5")
-scaler = joblib.load("scaler.pkl")
 
 # Streamlit App Title
 st.title("Crypto Price Prediction with Feature Selection")
@@ -122,6 +121,10 @@ if st.button("Predict"):
             # Reshape for LSTM (3D input: samples, timesteps, features)
             lstm_data = scaled_data.reshape((scaled_data.shape[0], scaled_data.shape[1], 1))
             lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
+
+            # Debugging Shapes
+            st.write(f"Shape of latest_data: {latest_data.shape}")
+            st.write(f"Shape of scaled_data: {scaled_data.shape}")
 
             # Display Results
             st.subheader("Predictions for Next Day Closing Price:")
