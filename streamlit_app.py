@@ -117,9 +117,12 @@ if st.button("Predict"):
 
 
         if st.button("Predict"):
-        try:
-            st.subheader("Predictions for Next Day Closing Price:")
-            st.write(f"**Ridge Regression Prediction:** ${ridge_prediction:.2f}")
-            st.write(f"**XGBoost Prediction:** ${xgb_prediction:.2f}")
-            st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
-    
+            try:
+                st.subheader("Predictions for Next Day Closing Price:")
+                st.write(f"**Ridge Regression Prediction:** ${ridge_prediction:.2f}")
+                st.write(f"**XGBoost Prediction:** ${xgb_prediction:.2f}")
+                st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
+            except Exception as e:
+                st.error(f"Error during prediction: {e}")
+
+
