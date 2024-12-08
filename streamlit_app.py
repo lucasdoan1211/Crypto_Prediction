@@ -115,8 +115,11 @@ if st.button("Predict"):
         st.write(f"Shape of LSTM input: {lstm_data.shape}")
         lstm_prediction = lstm_model.predict(lstm_data).flatten()[0]
 
-        # Display Results
-        st.subheader("Predictions for Next Day Closing Price:")
-        st.write(f"**Ridge Regression Prediction:** ${ridge_prediction:.2f}")
-        st.write(f"**XGBoost Prediction:** ${xgb_prediction:.2f}")
-        st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
+
+        if st.button("Predict"):
+        try:
+            st.subheader("Predictions for Next Day Closing Price:")
+            st.write(f"**Ridge Regression Prediction:** ${ridge_prediction:.2f}")
+            st.write(f"**XGBoost Prediction:** ${xgb_prediction:.2f}")
+            st.write(f"**LSTM Prediction:** ${lstm_prediction:.2f}")
+    
