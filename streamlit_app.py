@@ -46,17 +46,20 @@ if st.button("Predict"):
         data['Date'] = pd.to_datetime(data.index)
         data.set_index('Date', inplace=True)
 
+        # Ensure 'Close' is 1-dimensional (avoids errors)
+        close_series = data['Close'].astype(float)
+
         # Moving Averages (SMA and EMA)
-        data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
-        data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
-        data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
-        data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
+        data['SMA_7'] = SMAIndicator(close=close_series, window=7).sma_indicator()
+        data['SMA_30'] = SMAIndicator(close=close_series, window=30).sma_indicator()
+        data['EMA_7'] = EMAIndicator(close=close_series, window=7).ema_indicator()
+        data['EMA_30'] = EMAIndicator(close=close_series, window=30).ema_indicator()
 
         # Relative Strength Index (RSI)
-        data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
+        data['RSI_14'] = RSIIndicator(close=close_series, window=14).rsi()
 
         # Bollinger Bands
-        bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
+        bb_indicator = BollingerBands(close=close_series, window=20, window_dev=2)
         data['BB_High'] = bb_indicator.bollinger_hband()
         data['BB_Low'] = bb_indicator.bollinger_lband()
         data['BB_Width'] = data['BB_High'] - data['BB_Low']
@@ -67,16 +70,16 @@ if st.button("Predict"):
         # Lag Features
         lags = [1, 3, 7]
         for lag in lags:
-            data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
+            data[f'Close_Lag_{lag}'] = close_series.shift(lag)
             data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
 
         # Rolling Statistics
-        data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
-        data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
+        data['Rolling_Mean_7'] = close_series.rolling(window=7).mean()
+        data['Rolling_Std_7'] = close_series.rolling(window=7).std()
 
         # Returns
-        data['Daily_Return'] = data['Close'].pct_change()
-        data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
+        data['Daily_Return'] = close_series.pct_change()
+        data['Log_Return'] = np.log(close_series / close_series.shift(1))
 
         # Drop NaN Values
         data.fillna(data.median(), inplace=True)
