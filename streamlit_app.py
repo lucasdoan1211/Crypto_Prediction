@@ -4,7 +4,6 @@ import pandas as pd
 import yfinance as yf
 from sklearn.preprocessing import RobustScaler
 from sklearn.feature_selection import RFE
-from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
 import joblib
 from tensorflow.keras.models import load_model
@@ -48,22 +47,22 @@ if st.button("Predict"):
         data.set_index('Date', inplace=True)
 
         # Moving Averages (SMA and EMA)
-        data['SMA_7'] = SMAIndicator(close=data['Close'].to_numpy().flatten(), window=7).sma_indicator()
-        data['SMA_30'] = SMAIndicator(close=data['Close'].to_numpy().flatten(), window=30).sma_indicator()
-        data['EMA_7'] = EMAIndicator(close=data['Close'].to_numpy().flatten(), window=7).ema_indicator()
-        data['EMA_30'] = EMAIndicator(close=data['Close'].to_numpy().flatten(), window=30).ema_indicator()
+        data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
+        data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
+        data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
+        data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
 
         # Relative Strength Index (RSI)
-        data['RSI_14'] = RSIIndicator(close=data['Close'].to_numpy().flatten(), window=14).rsi()
+        data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
 
         # Bollinger Bands
-        bb_indicator = BollingerBands(close=data['Close'].to_numpy().flatten(), window=20, window_dev=2)
+        bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
         data['BB_High'] = bb_indicator.bollinger_hband()
         data['BB_Low'] = bb_indicator.bollinger_lband()
         data['BB_Width'] = data['BB_High'] - data['BB_Low']
 
         # Average True Range (ATR)
-        data['ATR'] = (data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min())
+        data['ATR'] = data['High'].rolling(window=14).max() - data['Low'].rolling(window=14).min()
 
         # Lag Features
         lags = [1, 3, 7]
@@ -80,7 +79,7 @@ if st.button("Predict"):
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
 
         # Drop NaN Values
-        data.fillna(data.fillna(data.median()))
+        data.fillna(data.median(), inplace=True)
 
         # Define Features and Target
         features = ['Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30',
