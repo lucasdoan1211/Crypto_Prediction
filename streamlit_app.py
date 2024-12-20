@@ -77,17 +77,16 @@ try:
         data = create_features(data)
         X_scaled_selected = preprocess_data(data, scaler, selector)
 
-        # Predictions
+        # Predictions for the next day only
         # LSTM Prediction
-        X_lstm = X_scaled_selected.reshape((X_scaled_selected.shape[0], X_scaled_selected.shape[1], 1))
-        lstm_pred = lstm_model.predict(X_lstm)
-        lstm_pred = lstm_pred[-1][0]  # Get the last prediction
+        X_lstm_last = X_scaled_selected[-1].reshape((1, X_scaled_selected.shape[1], 1)) # Reshape only the last day's data
+        lstm_pred = lstm_model.predict(X_lstm_last)[0][0]
 
         # XGBoost Prediction
-        xgb_pred = xgb_model.predict(X_scaled_selected)[-1]
+        xgb_pred = xgb_model.predict(X_scaled_selected[-1].reshape(1, -1))[0] # Predict using only the last day's data
 
         # Ridge Prediction
-        ridge_pred = ridge_model.predict(X_scaled_selected)[-1]
+        ridge_pred = ridge_model.predict(X_scaled_selected[-1].reshape(1, -1))[0] # Predict using only the last day's data
 
         # Display predictions
         st.subheader("Predictions for the next day:")
@@ -95,7 +94,7 @@ try:
         st.write(f"XGBoost Prediction: {xgb_pred:.4f}")
         st.write(f"Ridge Prediction: {ridge_pred:.4f}")
 
-        # Plot historical data and predictions
+        # Plot historical data
         st.subheader("Historical Data")
         st.line_chart(data.set_index('Date')['Close'])
 
