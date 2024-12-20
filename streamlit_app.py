@@ -3,39 +3,21 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import RobustScaler
-from sklearn.linear_model import Ridge
+from sklearn.feature_selection import RFE
 from xgboost import XGBRegressor
 from tensorflow.keras.models import load_model
+from sklearn.linear_model import Ridge
+import ta
 import joblib
-from ta.volatility import BollingerBands
-from ta.momentum import RSIIndicator
-from ta.trend import SMAIndicator, EMAIndicator
 
-# Streamlit App Title
-st.title("Crypto Price Prediction with Pre-Saved Models")
-st.write(
-    "This app predicts the next day's cryptocurrency closing price using Ridge, XGBoost, and LSTM models. "
-    "It uses pre-saved models and feature selectors to ensure consistency and speed."
-)
-
-# Load saved models and scaler
-try:
-    scaler = joblib.load("scaler.pkl")
-    feature_selector = joblib.load("feature_selector.pkl")
-    ridge_model = joblib.load("model_ridge.pkl")
-    xgb_model = joblib.load("model_xgb.pkl")
-    lstm_model = load_model("model_lstm.h5")
-    st.success("All models and scalers loaded successfully!")
-except Exception as e:
-    st.error(f"Error loading models or scalers: {e}")
-    st.stop()
+st.title("Dynamic Crypto Price Prediction")
 
 # Input Section
 ticker = st.text_input("Enter the Cryptocurrency Ticker (e.g., BTC-USD):", value="BTC-USD")
 
 if st.button("Predict"):
     try:
-        # Fetch Data from Yahoo Finance
+        # Fetch Data
         today = pd.Timestamp.today()
         start_date = today - pd.DateOffset(years=1)
         data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=today.strftime('%Y-%m-%d'))
@@ -44,12 +26,7 @@ if st.button("Predict"):
             st.error("No data found for the given ticker. Please try another ticker.")
             st.stop()
 
-        st.write("Data loaded successfully!")
-
-        # Feature Engineering
-        data = data.reset_index()
-        data['Date'] = pd.to_datetime(data['Date'])
-        data.set_index('Date', inplace=True)
+        # Feature creation
         data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
         data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
         data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
@@ -68,10 +45,8 @@ if st.button("Predict"):
         data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
         data['Daily_Return'] = data['Close'].pct_change()
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
-        data.reset_index(inplace=True)
         data.fillna(data.median(), inplace=True)
 
-        # Prepare Features
         features = [
             'Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30', 'RSI_14',
             'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 'Close_Lag_7',
@@ -80,20 +55,27 @@ if st.button("Predict"):
         ]
         X = data[features]
 
-        # Apply saved feature selector
+        # Load scaler and selector
+        scaler = joblib.load("scaler.pkl")
+        selector = joblib.load("feature_selector.pkl")
         X_scaled = scaler.transform(X)
-        optimal_features = X.columns[feature_selector.support_]
+        optimal_features = X.columns[selector.support_]
         X_selected = X[optimal_features]
         X_scaled_selected = scaler.transform(X_selected)
 
+        # Load models
+        ridge_model = joblib.load("model_ridge.pkl")
+        xgb_model = joblib.load("model_xgb.pkl")
+        lstm_model = load_model("model_lstm.h5")
+
         # Prepare for Prediction
-        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ensure 2D for Ridge and XGBoost
-        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Ensure 3D for LSTM
+        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ridge, XGBoost
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # LSTM
 
         # Predictions
-        ridge_prediction = ridge_model.predict(latest_data)[0]  # Ridge requires 2D input
-        xgb_prediction = xgb_model.predict(latest_data)[0]      # XGBoost requires 2D input
-        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]  # LSTM requires 3D input
+        ridge_prediction = ridge_model.predict(latest_data)[0]
+        xgb_prediction = xgb_model.predict(latest_data)[0]
+        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]
 
         # Display Predictions
         st.subheader("Predictions for the Next Day")
