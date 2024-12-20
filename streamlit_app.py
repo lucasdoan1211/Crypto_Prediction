@@ -13,6 +13,8 @@ from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
 import joblib
 
+
+
 st.title("Dynamic Crypto Price Prediction (10-Month Time Frame)")
 
 # Input Section
@@ -70,9 +72,10 @@ if st.button("Predict"):
         X_scaled_selected = scaler.transform(X_selected)
 
         # Validate shape
-        print("Prediction Input Shape:", X_scaled_selected[-1].reshape(1, -1).shape)
+        print("Prediction Input Shape (Ridge/XGBoost):", X_scaled_selected[-1].reshape(1, -1).shape)
 
         # Load models
+        ridge_model = joblib.load("model_ridge.pkl")
         xgb_model = joblib.load("model_xgb.pkl")
         lstm_model = load_model("model_lstm.h5")
 
@@ -81,14 +84,17 @@ if st.button("Predict"):
         latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # LSTM
 
         # Predictions
+        ridge_prediction = ridge_model.predict(latest_data).flatten()[0]
         xgb_prediction = xgb_model.predict(latest_data).flatten()[0]
         lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]
 
         # Display Predictions
         st.subheader("Predictions for the Next Day")
+        st.write(f"**Ridge Regression Prediction:** {ridge_prediction:.2f}")
         st.write(f"**XGBoost Prediction:** {xgb_prediction:.2f}")
         st.write(f"**LSTM Prediction:** {lstm_prediction:.2f}")
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
+
 
