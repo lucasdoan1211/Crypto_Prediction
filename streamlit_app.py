@@ -13,7 +13,6 @@ from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
 import joblib
 
-
 st.title("Dynamic Crypto Price Prediction (10-Month Time Frame)")
 
 # Input Section
@@ -79,10 +78,10 @@ if st.button("Predict"):
         lstm_model = load_model("model_lstm.h5")
 
         # Prepare for Prediction
-        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ridge/XGBoost
+        latest_data = X_scaled_selected[-1:].reshape(1, -1)  # Reshape for Ridge/XGBoost
         print("Latest Data Shape (Ridge/XGBoost):", latest_data.shape)
 
-        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # LSTM
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Reshape for LSTM
         print("LSTM Data Shape:", latest_data_lstm.shape)
 
         # Predictions
@@ -98,4 +97,3 @@ if st.button("Predict"):
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
-
