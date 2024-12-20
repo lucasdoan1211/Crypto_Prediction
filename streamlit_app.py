@@ -72,9 +72,11 @@ if st.button("Predict"):
         lstm_model = load_model("model_lstm.h5")
 
         # Prepare for Prediction
-        # Ensure correct shape for Ridge/XGBoost and LSTM
-        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Correct 2D shape for Ridge/XGBoost
-        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Correct 3D shape for LSTM
+        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ensure 2D shape for Ridge/XGBoost
+        print("Latest Data Shape (Ridge/XGBoost):", latest_data.shape)
+
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Ensure 3D shape for LSTM
+        print("LSTM Data Shape:", latest_data_lstm.shape)
 
         # Predictions
         ridge_prediction = ridge_model.predict(latest_data).flatten()[0]  # Ridge expects 2D input
