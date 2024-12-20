@@ -13,16 +13,16 @@ from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
 import joblib
 
-st.title("Dynamic Crypto Price Prediction")
+st.title("Dynamic Crypto Price Prediction (10-Month Time Frame)")
 
 # Input Section
 ticker = st.text_input("Enter the Cryptocurrency Ticker (e.g., BTC-USD):", value="BTC-USD")
 
 if st.button("Predict"):
     try:
-        # Fetch Data
+        # Fetch Data for 10 months
         today = pd.Timestamp.today()
-        start_date = today - pd.DateOffset(years=1)
+        start_date = today - pd.DateOffset(months=10)  # Change to 10 months
         data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=today.strftime('%Y-%m-%d'))
 
         if data.empty:
@@ -48,8 +48,11 @@ if st.button("Predict"):
         data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
         data['Daily_Return'] = data['Close'].pct_change()
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
-        data.fillna(data.median(), inplace=True)
 
+        # Fill missing data
+        data.fillna(method="bfill", inplace=True)
+
+        # Features
         features = [
             'Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30', 'RSI_14',
             'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 'Close_Lag_7',
@@ -66,22 +69,22 @@ if st.button("Predict"):
         X_selected = X[optimal_features]
         X_scaled_selected = scaler.transform(X_selected)
 
+        # Validate shape
+        print("Prediction Input Shape:", X_scaled_selected[-1].reshape(1, -1).shape)
+
         # Load models
         ridge_model = joblib.load("model_ridge.pkl")
         xgb_model = joblib.load("model_xgb.pkl")
         lstm_model = load_model("model_lstm.h5")
 
         # Prepare for Prediction
-        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ensure 2D shape for Ridge/XGBoost
-        print("Latest Data Shape (Ridge/XGBoost):", latest_data.shape)
-
-        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Ensure 3D shape for LSTM
-        print("LSTM Data Shape:", latest_data_lstm.shape)
+        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ridge/XGBoost
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # LSTM
 
         # Predictions
-        ridge_prediction = ridge_model.predict(latest_data).flatten()[0]  # Ridge expects 2D input
-        xgb_prediction = xgb_model.predict(latest_data).flatten()[0]      # XGBoost expects 2D input
-        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]  # LSTM expects 3D input
+        ridge_prediction = ridge_model.predict(latest_data).flatten()[0]
+        xgb_prediction = xgb_model.predict(latest_data).flatten()[0]
+        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]
 
         # Display Predictions
         st.subheader("Predictions for the Next Day")
@@ -91,3 +94,4 @@ if st.button("Predict"):
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
+
