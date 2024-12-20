@@ -88,7 +88,7 @@ if st.button("Predict"):
 
         # Prepare for Prediction
         latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ensure 2D for Ridge and XGBoost
-        latest_data_lstm = latest_data.reshape((latest_data.shape[0], latest_data.shape[1], 1))  # Ensure 3D for LSTM
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Ensure 3D for LSTM
 
         # Predictions
         ridge_prediction = ridge_model.predict(latest_data)[0]  # Ridge requires 2D input
