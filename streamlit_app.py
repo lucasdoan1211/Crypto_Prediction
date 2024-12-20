@@ -78,10 +78,12 @@ if st.button("Predict"):
         lstm_model = load_model("model_lstm.h5")
 
         # Prepare for Prediction
-        latest_data = X_scaled_selected[-1:].reshape(1, -1)  # Correct reshaping
+        # Correctly select only the last row and reshape for Ridge/XGBoost
+        latest_data = X_scaled_selected[-1, :].reshape(1, -1)  
         print("Latest Data Shape (Ridge/XGBoost):", latest_data.shape)
 
-        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Reshape for LSTM
+        # Reshape for LSTM - the sequence length is now the number of features
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  
         print("LSTM Data Shape:", latest_data_lstm.shape)
 
         # Predictions
