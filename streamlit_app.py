@@ -7,7 +7,10 @@ from sklearn.feature_selection import RFE
 from xgboost import XGBRegressor
 from tensorflow.keras.models import load_model
 from sklearn.linear_model import Ridge
-import ta
+import ta  
+from ta.volatility import BollingerBands
+from ta.momentum import RSIIndicator
+from ta.trend import SMAIndicator, EMAIndicator
 import joblib
 
 st.title("Dynamic Crypto Price Prediction")
