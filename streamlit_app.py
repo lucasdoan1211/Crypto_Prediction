@@ -87,13 +87,13 @@ if st.button("Predict"):
         X_scaled_selected = scaler.transform(X_selected)
 
         # Prepare for Prediction
-        latest_data = X_scaled_selected[-1].reshape(1, -1)
-        latest_data_lstm = latest_data.reshape((latest_data.shape[0], latest_data.shape[1], 1))
+        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ensure 2D for Ridge and XGBoost
+        latest_data_lstm = latest_data.reshape((latest_data.shape[0], latest_data.shape[1], 1))  # Ensure 3D for LSTM
 
         # Predictions
-        ridge_prediction = ridge_model.predict(latest_data)[0]
-        xgb_prediction = xgb_model.predict(latest_data)[0]
-        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]
+        ridge_prediction = ridge_model.predict(latest_data)[0]  # Ridge requires 2D input
+        xgb_prediction = xgb_model.predict(latest_data)[0]      # XGBoost requires 2D input
+        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]  # LSTM requires 3D input
 
         # Display Predictions
         st.subheader("Predictions for the Next Day")
