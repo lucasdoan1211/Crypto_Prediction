@@ -8,9 +8,7 @@ from xgboost import XGBRegressor
 from tensorflow.keras.models import load_model
 from sklearn.linear_model import Ridge
 import ta
-from ta.volatility import BollingerBands
-from ta.momentum import RSIIndicator
-from ta.trend import SMAIndicator, EMAIndicator
+import joblib
 
 st.title("Dynamic Crypto Price Prediction")
 
@@ -49,6 +47,7 @@ if st.button("Predict"):
         data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
         data.fillna(data.median(), inplace=True)
 
+        # Feature selection
         features = [
             'Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30', 'RSI_14',
             'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 'Close_Lag_7',
@@ -57,7 +56,7 @@ if st.button("Predict"):
         ]
         X = data[features]
 
-        # Load scaler and selector
+        # Load scaler and feature selector
         scaler = joblib.load("scaler.pkl")
         selector = joblib.load("feature_selector.pkl")
         X_scaled = scaler.transform(X)
@@ -71,13 +70,14 @@ if st.button("Predict"):
         lstm_model = load_model("model_lstm.h5")
 
         # Prepare for Prediction
-        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ridge, XGBoost
-        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # LSTM
+        # Latest data must have shape (1, n_features) for Ridge/XGBoost and (1, n_features, 1) for LSTM
+        latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ensure 2D for Ridge and XGBoost
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # Ensure 3D for LSTM
 
         # Predictions
-        ridge_prediction = ridge_model.predict(latest_data)[0]
-        xgb_prediction = xgb_model.predict(latest_data)[0]
-        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]
+        ridge_prediction = ridge_model.predict(latest_data)[0]  # Ridge expects 2D input
+        xgb_prediction = xgb_model.predict(latest_data)[0]      # XGBoost expects 2D input
+        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]  # LSTM expects 3D input
 
         # Display Predictions
         st.subheader("Predictions for the Next Day")
