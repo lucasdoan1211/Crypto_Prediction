@@ -14,7 +14,6 @@ from ta.trend import SMAIndicator, EMAIndicator
 import joblib
 
 
-
 st.title("Dynamic Crypto Price Prediction (10-Month Time Frame)")
 
 # Input Section
@@ -24,7 +23,7 @@ if st.button("Predict"):
     try:
         # Fetch Data for 10 months
         today = pd.Timestamp.today()
-        start_date = today - pd.DateOffset(months=10)  # Change to 10 months
+        start_date = today - pd.DateOffset(months=10)
         data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=today.strftime('%Y-%m-%d'))
 
         if data.empty:
@@ -72,7 +71,7 @@ if st.button("Predict"):
         X_scaled_selected = scaler.transform(X_selected)
 
         # Validate shape
-        print("Prediction Input Shape (Ridge/XGBoost):", X_scaled_selected[-1].reshape(1, -1).shape)
+        print("Shape of X_scaled_selected:", X_scaled_selected.shape)
 
         # Load models
         ridge_model = joblib.load("model_ridge.pkl")
@@ -81,7 +80,10 @@ if st.button("Predict"):
 
         # Prepare for Prediction
         latest_data = X_scaled_selected[-1].reshape(1, -1)  # Ridge/XGBoost
+        print("Latest Data Shape (Ridge/XGBoost):", latest_data.shape)
+
         latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  # LSTM
+        print("LSTM Data Shape:", latest_data_lstm.shape)
 
         # Predictions
         ridge_prediction = ridge_model.predict(latest_data).flatten()[0]
@@ -96,5 +98,4 @@ if st.button("Predict"):
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
-
 
