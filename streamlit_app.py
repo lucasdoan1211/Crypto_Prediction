@@ -62,12 +62,15 @@ if st.button("Predict"):
         X = data[features]
 
         # Load scaler and feature selector
-        scaler = joblib.load("scaler.pkl")
+        scaler_X = joblib.load("scaler_X.pkl")  # Corrected scaler loading
+        scaler_y = joblib.load("scaler_y.pkl")
         selector = joblib.load("feature_selector.pkl")
-        X_scaled = scaler.transform(X)
+        
+        # Scale and select features
+        X_scaled = scaler_X.transform(X)
         optimal_features = X.columns[selector.support_]
         X_selected = X[optimal_features]
-        X_scaled_selected = scaler.transform(X_selected)
+        X_scaled_selected = scaler_X.transform(X_selected)
 
         # Validate shape
         print("Shape of X_scaled_selected:", X_scaled_selected.shape)
@@ -77,19 +80,19 @@ if st.button("Predict"):
         xgb_model = joblib.load("model_xgb.pkl")
         lstm_model = load_model("model_lstm.h5")
 
-        # Prepare for Prediction
-        # Correctly select only the last row and reshape for Ridge/XGBoost
-        latest_data = X_scaled_selected[-1, :].reshape(1, -1)  
+        # Prepare for Prediction - Corrected data selection and reshaping
+        # Ridge/XGBoost - Select the last row, ensuring it's a 2D array for prediction
+        latest_data = X_scaled_selected[-1:, :]  # Note the -1: to keep it as 2D
         print("Latest Data Shape (Ridge/XGBoost):", latest_data.shape)
 
-        # Reshape for LSTM - the sequence length is now the number of features
-        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))  
+        # LSTM - Reshape to (1, num_features, 1) - sequence length is 1 now
+        latest_data_lstm = latest_data.reshape((1, latest_data.shape[1], 1))
         print("LSTM Data Shape:", latest_data_lstm.shape)
 
         # Predictions
-        ridge_prediction = ridge_model.predict(latest_data).flatten()[0]
-        xgb_prediction = xgb_model.predict(latest_data).flatten()[0]
-        lstm_prediction = lstm_model.predict(latest_data_lstm).flatten()[0]
+        ridge_prediction = scaler_y.inverse_transform(ridge_model.predict(latest_data))[0][0]
+        xgb_prediction = scaler_y.inverse_transform(xgb_model.predict(latest_data).reshape(-1, 1))[0][0]
+        lstm_prediction = scaler_y.inverse_transform(lstm_model.predict(latest_data_lstm))[0][0]
 
         # Display Predictions
         st.subheader("Predictions for the Next Day")
