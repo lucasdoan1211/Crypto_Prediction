@@ -8,7 +8,9 @@ from xgboost import XGBRegressor
 from tensorflow.keras.models import load_model
 from sklearn.linear_model import Ridge
 import ta
-import joblib
+from ta.volatility import BollingerBands
+from ta.momentum import RSIIndicator
+from ta.trend import SMAIndicator, EMAIndicator
 
 st.title("Dynamic Crypto Price Prediction")
 
