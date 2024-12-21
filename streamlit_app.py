@@ -76,8 +76,8 @@ if st.button("Predict Next Day Close"):
         X_lstm = X_selected.reshape((1, X_selected.shape[1], 1))
         lstm_prediction = lstm_model.predict(X_lstm)[0, 0]
 
-        # Predict with Ridge (2D input)
-        ridge_prediction = ridge_model.predict(X_selected)[0]
+        # Predict with Ridge (flatten for 1D input)
+        ridge_prediction = ridge_model.predict(X_selected.flatten())[0] # FIX: Flatten the array here
 
         # Display predictions
         st.write(f"### Predictions for {ticker}")
