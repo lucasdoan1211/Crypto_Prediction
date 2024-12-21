@@ -66,7 +66,7 @@ def main():
             X_scaled = scaler.transform(X)
 
             # Feature selection
-            X_selected = X[:, feature_selector.support_]
+            X_selected = X_scaled[:, feature_selector.support_]
 
             # Reshape for LSTM
             X_lstm = X_selected.reshape((X_selected.shape[0], X_selected.shape[1], 1))
