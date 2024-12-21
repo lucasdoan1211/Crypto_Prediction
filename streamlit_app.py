@@ -9,8 +9,8 @@ import ta
 import joblib
 from sklearn.preprocessing import RobustScaler
 
-# Load the trained model and scaler
-ridge_model = joblib.load("model_ridge.pkl")
+# Load the trained XGBoost model, feature selector, and scaler
+xgb_model = joblib.load("model_xgb.pkl")
 scaler = joblib.load("scaler.pkl")
 selector = joblib.load("feature_selector.pkl")
 
@@ -62,13 +62,13 @@ def predict_next_day_price(ticker):
     # Preprocess the data
     X_latest = preprocess_data(data)
 
-    # Predict using the Ridge model
-    prediction = ridge_model.predict(X_latest[-1].reshape(1, -1))
+    # Predict using the XGBoost model
+    prediction = xgb_model.predict(X_latest[-1].reshape(1, -1))
 
     return prediction[0]
 
 # Streamlit app
-st.title("Cryptocurrency Price Prediction (Ridge Model)")
+st.title("Cryptocurrency Price Prediction (XGBoost Model)")
 
 # Sidebar
 st.sidebar.header("User Input")
