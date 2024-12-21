@@ -69,8 +69,13 @@ if st.button("Predict Next Day Price"):
                 ]
 
                 X = data[features]
-                X_scaled = scaler.transform(X)
-                X_selected = X[:, feature_selector.support_]
+
+                # Convert to NumPy array and apply scaling
+                X_np = X.to_numpy()  # Ensure X is a NumPy array
+                X_scaled = scaler.transform(X_np)
+
+                # Use the feature selector to choose optimal features
+                X_selected = X_scaled[:, feature_selector.support_]
 
                 # Prepare input for LSTM
                 X_lstm = X_selected[-1].reshape(1, X_selected.shape[1], 1)
