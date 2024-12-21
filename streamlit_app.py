@@ -65,8 +65,11 @@ if st.button("Predict Next Day Close"):
         ]
         X = latest_data[features]
 
+        # Flatten the features for consistent input shape
+        X_flattened = X.values.flatten().reshape(1, -1)
+
         # Preprocess
-        X_scaled = scaler.transform(X)
+        X_scaled = scaler.transform(X_flattened)
         X_selected = X_scaled[:, selector.support_]
 
         # Predict with XGBoost
@@ -77,7 +80,7 @@ if st.button("Predict Next Day Close"):
         lstm_prediction = lstm_model.predict(X_lstm)[0, 0]
 
         # Predict with Ridge (2D input for Ridge)
-        ridge_prediction = ridge_model.predict(X_selected.reshape(1, -1))[0]
+        ridge_prediction = ridge_model.predict(X_selected)[0]
 
         # Display predictions
         st.write(f"### Predictions for {ticker}")
