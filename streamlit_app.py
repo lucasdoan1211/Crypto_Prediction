@@ -22,22 +22,22 @@ def fetch_data(ticker, start_date, end_date):
     data = data.reset_index()
     return data
 
-# Function to create features
+# Function to create features (updated for robustness)
 def create_features(data):
     data['Date'] = pd.to_datetime(data['Date'])
     data.set_index('Date', inplace=True)
 
-    # Feature Engineering (Updated to handle ndarray shape issue)
-    data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator().values.flatten()
-    data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator().values.flatten()
-    data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator().values.flatten()
-    data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator().values.flatten()
-    data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi().values.flatten()
+    # Feature Engineering (Force 1D array output)
+    data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator().fillna(0).values.ravel()
+    data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator().fillna(0).values.ravel()
+    data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator().fillna(0).values.ravel()
+    data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator().fillna(0).values.ravel()
+    data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi().fillna(0).values.ravel()
     bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
-    data['BB_High'] = bb_indicator.bollinger_hband().values.flatten()
-    data['BB_Low'] = bb_indicator.bollinger_lband().values.flatten()
+    data['BB_High'] = bb_indicator.bollinger_hband().fillna(0).values.ravel()
+    data['BB_Low'] = bb_indicator.bollinger_lband().fillna(0).values.ravel()
     data['BB_Width'] = data['BB_High'] - data['BB_Low']
-    data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14).values.flatten()
+    data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14).fillna(0).values.ravel()
     lags = [1, 3, 7]
     for lag in lags:
         data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
