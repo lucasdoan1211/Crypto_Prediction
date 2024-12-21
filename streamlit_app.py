@@ -34,26 +34,39 @@ def main():
                 return
 
             # Feature engineering
-            data['SMA_7'] = data['Close'].rolling(window=7).mean()
-            data['SMA_30'] = data['Close'].rolling(window=30).mean()
-            data['EMA_7'] = data['Close'].ewm(span=7, adjust=False).mean()
-            data['EMA_30'] = data['Close'].ewm(span=30, adjust=False).mean()
-            data['RSI_14'] = ta.momentum.RSIIndicator(close=data['Close'], window=14).rsi()
-            bb_indicator = ta.volatility.BollingerBands(close=data['Close'], window=20, window_dev=2)
-            data['BB_High'] = bb_indicator.bollinger_hband()
-            data['BB_Low'] = bb_indicator.bollinger_lband()
-            data['BB_Width'] = data['BB_High'] - data['BB_Low']
-            data['ATR'] = ta.volatility.average_true_range(
-                high=data['High'], low=data['Low'], close=data['Close'], window=14
-            )
-            for lag in [1, 3, 7]:
-                data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
-                data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
-            data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
-            data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
-            data['Daily_Return'] = data['Close'].pct_change()
-            data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
+#1. Moving Averages (SMA and EMA)
+data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
+data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
+data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
+data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
 
+#2. Relative Strength Index (RSI)
+data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
+
+#3. Bollinger Bands
+bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
+data['BB_High'] = bb_indicator.bollinger_hband()
+data['BB_Low'] = bb_indicator.bollinger_lband()
+data['BB_Width'] = data['BB_High'] - data['BB_Low']
+
+#4. Average True Range (ATR) - Volatility
+data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'],window=14)
+
+#5. Lag Features
+lags = [1, 3, 7]
+for lag in lags:
+    data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
+    data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
+
+# 6. Rolling Statistics
+data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
+data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
+
+# 7. Returns
+data['Daily_Return'] = data['Close'].pct_change()
+data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
+
+data.reset_index(inplace=True)
             # Handle missing values
             data.fillna(data.median(), inplace=True)
 
