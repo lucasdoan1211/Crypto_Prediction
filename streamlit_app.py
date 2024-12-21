@@ -27,19 +27,19 @@ def create_features(data):
     data['Date'] = pd.to_datetime(data['Date'])
     data.set_index('Date', inplace=True)
 
-    # Correctly create new columns from indicators
-    data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
-    data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
-    data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
-    data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
-    data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
+    # Reshape indicator outputs to 1D arrays
+    data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator().replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
+    data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator().replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
+    data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator().replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
+    data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator().replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
+    data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi().replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
 
     bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
-    data['BB_High'] = bb_indicator.bollinger_hband()
-    data['BB_Low'] = bb_indicator.bollinger_lband()
+    data['BB_High'] = bb_indicator.bollinger_hband().replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
+    data['BB_Low'] = bb_indicator.bollinger_lband().replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
     data['BB_Width'] = data['BB_High'] - data['BB_Low']
 
-    data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14)
+    data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14).replace([np.inf, -np.inf], np.nan).fillna(method='bfill').values.reshape(-1)
 
     lags = [1, 3, 7]
     for lag in lags:
