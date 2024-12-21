@@ -83,7 +83,7 @@ def main():
             # Prepare features for prediction
             X_next_day = data[optimal_features].iloc[[-1]]
             X_next_day_scaled = scaler.transform(X_next_day)
-            X_next_day_lstm = X_next_day_scaled.reshape((X_next_day_scaled.shape[0], X_next_day_scaled.shape[1], 1))
+            X_next_day_lstm = np.reshape(X_next_day_scaled, (X_next_day_scaled.shape[0], X_next_day_scaled.shape[1], 1))
 
             # Predict using models
             lstm_prediction = lstm_model.predict(X_next_day_lstm, verbose=0).flatten()[0]
