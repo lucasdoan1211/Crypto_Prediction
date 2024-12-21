@@ -17,8 +17,8 @@ def train_model(data):
     data["Next_Close"] = data["Close"].shift(-1)
     data = data.dropna()
 
-    X = data[["Close"]].values
-    y = data["Next_Close"].values
+    X = data[["Close"]]
+    y = data["Next_Close"]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
