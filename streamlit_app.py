@@ -99,3 +99,37 @@ def main():
                 optimal_features = joblib.load("optimal_features.pkl")
 
                 with st.spinner('Predicting...'):
+                    # Prepare the data for prediction
+                    X_next_day = data[optimal_features].iloc[-1:]
+                    lstm_pred, xgb_pred, ridge_pred = predict_next_day(X_next_day, lstm_model, xgb_model, ridge_model, scaler)
+
+                    # Display predictions
+                    last_close_price = data['Close'].iloc[-1]
+                    lstm_diff = lstm_pred - last_close_price
+                    xgb_diff = xgb_pred - last_close_price
+                    ridge_diff = ridge_pred - last_close_price
+                    
+                    lstm_color = "green" if lstm_diff > 0 else "red"
+                    xgb_color = "green" if xgb_diff > 0 else "red"
+                    ridge_color = "green" if ridge_diff > 0 else "red"
+                    
+                    fig = go.Figure()
+                    fig.add_hline(y=last_close_price, line_dash="dot",
+                                  annotation_text="Last Close Price", annotation_position="bottom right")
+                    fig.add_annotation(x=0.1, y=lstm_pred, text=f'LSTM: {lstm_pred:.2f}',
+                                       showarrow=True, arrowhead=5, arrowcolor=lstm_color, ax=0, ay=-40)
+                    fig.add_annotation(x=0.5, y=xgb_pred, text=f'XGBoost: {xgb_pred:.2f}',
+                                       showarrow=True, arrowhead=5, arrowcolor=xgb_color, ax=0, ay=-40)
+                    fig.add_annotation(x=0.9, y=ridge_pred, text=f'Ridge: {ridge_pred:.2f}',
+                                       showarrow=True, arrowhead=5, arrowcolor=ridge_color, ax=0, ay=-40)
+                    fig.update_layout(title='Next Day Price Predictions',
+                                      yaxis_title='Price',
+                                      xaxis_title='Models',
+                                      showlegend=False)
+                    st.plotly_chart(fig)
+
+            except FileNotFoundError:
+                st.error("Model files not found. Please train the models first.")
+
+if __name__ == "__main__":
+    main()
