@@ -1,38 +1,42 @@
 import streamlit as st
-import yfinance as yf
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import RobustScaler
-from tensorflow.keras.models import load_model
 import joblib
+import yfinance as yf
+from tensorflow.keras.models import load_model
 from xgboost import XGBRegressor
 import ta  
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
 
-# Load saved objects
+# Load models and scaler
 scaler = joblib.load("scaler.pkl")
-optimal_features = joblib.load("selected_features.pkl")
-lstm_model = load_model("model_lstm.h5")
+selector = joblib.load("feature_selector.pkl")
 xgb_model = joblib.load("model_xgb.pkl")
+ridge_model = joblib.load("model_ridge.pkl")
+lstm_model = load_model("model_lstm.h5")
 
-# Streamlit app
-def main():
-    st.title("Stock Price Prediction App")
-    st.markdown("Enter the stock ticker to predict the next day's closing price based on the past 6 months of data.")
+# Title and description
+st.title("Cryptocurrency Price Prediction")
+st.write("This app predicts the closing price of cryptocurrencies using machine learning models.")
 
-    ticker = st.text_input("Stock Ticker", "AAPL")
+# User input for ticker symbol
+ticker = st.text_input("Enter Cryptocurrency Ticker (e.g., ONDO-USD):", "ONDO-USD")
 
-    if st.button("Predict"):
-        try:
-            # Fetch 6 months of data from Yahoo Finance
-            data = yf.download(ticker, period="6mo")
-            if data.empty:
-                st.error("No data found for the entered ticker. Please check the ticker symbol.")
-                return
-
+# Fetch new data
+if st.button("Predict"):
+    with st.spinner("Fetching data and making predictions..."):
+        # Fetch data
+        data = yf.download(ticker, start="2024-01-14", end="2024-12-18")
+        if data.empty:
+            st.error("No data found for the provided ticker. Please check the symbol and try again.")
+        else:
+            data = data.reset_index()
+            
             # Feature engineering
+            data['Date'] = pd.to_datetime(data['Date'])
+            data.set_index('Date', inplace=True)
             data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
             data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
             data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
@@ -42,9 +46,7 @@ def main():
             data['BB_High'] = bb_indicator.bollinger_hband()
             data['BB_Low'] = bb_indicator.bollinger_lband()
             data['BB_Width'] = data['BB_High'] - data['BB_Low']
-            data['ATR'] = ta.volatility.average_true_range(
-                high=data['High'], low=data['Low'], close=data['Close'], window=14
-            )
+            data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14)
             for lag in [1, 3, 7]:
                 data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
                 data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
@@ -52,27 +54,32 @@ def main():
             data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
             data['Daily_Return'] = data['Close'].pct_change()
             data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
+            data.reset_index(inplace=True)
             data.fillna(data.median(), inplace=True)
 
-            # Select features
-            X = data[optimal_features]
+            # Feature selection
+            features = [
+                'Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30', 'RSI_14',
+                'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 'Close_Lag_7',
+                'Volume_Lag_1', 'Volume_Lag_3', 'Volume_Lag_7', 'Rolling_Mean_7', 'Rolling_Std_7',
+                'Daily_Return', 'Log_Return'
+            ]
+            X = data[features]
             X_scaled = scaler.transform(X)
+            X_selected = X[:, selector.support_]
 
-            # Prepare input for models
-            last_row_xgb = X_scaled[-1].reshape(1, -1)  # 2D for XGBoost
-            last_row_lstm = X_scaled[-1].reshape(1, X_scaled.shape[1], 1)  # 3D for LSTM
+            # XGBoost Prediction
+            xgb_pred = xgb_model.predict(X_selected)
 
-            # Make predictions
-            xgb_pred = xgb_model.predict(last_row_xgb)
-            lstm_pred = lstm_model.predict(last_row_lstm)
+            # Ridge Regression Prediction
+            ridge_pred = ridge_model.predict(X_selected)
 
-            # Display result
-            st.write("### Prediction")
-            st.write(f"Predicted Next Close Price (XGBoost): ${xgb_pred[0]:.2f}")
-            st.write(f"Predicted Next Close Price (LSTM): ${lstm_pred[0][0]:.2f}")
+            # LSTM Prediction
+            X_lstm = X_selected.reshape((X_selected.shape[0], X_selected.shape[1], 1))
+            lstm_pred = lstm_model.predict(X_lstm)
 
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-
-if __name__ == "__main__":
-    main()
+            # Display predictions
+            st.subheader("Predictions")
+            st.write(f"XGBoost Prediction: {xgb_pred[-1]:.2f}")
+            st.write(f"Ridge Regression Prediction: {ridge_pred[-1]:.2f}")
+            st.write(f"LSTM Prediction: {lstm_pred[-1][0]:.2f}")
