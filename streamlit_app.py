@@ -3,16 +3,19 @@ import pandas as pd
 import numpy as np
 import joblib
 from tensorflow.keras.models import load_model
+from tensorflow.keras.losses import MeanSquaredError
 from datetime import datetime, timedelta
 import yfinance as yf
 from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from ta.trend import SMAIndicator, EMAIndicator
+import ta
 
 # Load models and scaler
 @st.cache_resource
 def load_saved_models():
-    lstm_model = load_model("model_lstm.h5")
+    lstm_model = load_model("model_lstm.h5", compile=False)
+    lstm_model.compile(optimizer='adam', loss=MeanSquaredError())
     xgb_model = joblib.load("xgb_model.pkl")
     ridge_model = joblib.load("ridge_model.pkl")
     scaler = joblib.load("scaler.pkl")
@@ -93,10 +96,7 @@ def main():
             st.write(f"**Ridge Prediction:** {ridge_prediction:.2f}")
 
         except Exception as e:
-            if "mse" in str(e):
-                st.error("An error occurred with the loss function. Ensure the model uses a valid loss function registered with Keras.")
-            else:
-                st.error(f"An error occurred: {e}")
+            st.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     main()
