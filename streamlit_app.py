@@ -64,13 +64,21 @@ def main():
     scaler = joblib.load("scaler.pkl")
     ridge_model = joblib.load("model_ridge.pkl")
 
-    # Features for prediction
+    # Define features used for prediction
     features = [
         'Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30', 'RSI_14',
         'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 'Close_Lag_7',
         'Volume_Lag_1', 'Volume_Lag_3', 'Volume_Lag_7', 'Rolling_Mean_7', 'Rolling_Std_7',
         'Daily_Return', 'Log_Return'
     ]
+    
+    # Verify if all features are in the data
+    missing_features = [feature for feature in features if feature not in data.columns]
+    if missing_features:
+        st.error(f"Missing columns for prediction: {missing_features}")
+        return
+
+    # Select the features from data
     X = data[features]
 
     # Scaling
