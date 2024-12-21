@@ -6,7 +6,10 @@ from sklearn.preprocessing import RobustScaler
 from tensorflow.keras.models import load_model
 import joblib
 from xgboost import XGBRegressor
-import ta  # Import for technical analysis
+import ta  
+from ta.volatility import BollingerBands
+from ta.momentum import RSIIndicator
+from ta.trend import SMAIndicator, EMAIndicator
 
 # Load saved models and preprocessing objects
 scaler = joblib.load("scaler.pkl")
@@ -68,14 +71,17 @@ def main():
             # Feature selection
             X_selected = X_scaled[:, feature_selector.support_]
 
+            # Flatten data for XGBoost
+            last_row_xgb = X_selected[-1].flatten()  # Flatten the last row
+
             # Reshape for LSTM
-            X_lstm = X_selected.reshape((X_selected.shape[0], X_selected.shape[1], 1))
+            last_row_lstm = X_selected[-1].reshape(1, X_selected.shape[1], 1)  # For LSTM
 
             # Predict using LSTM
-            lstm_pred = lstm_model.predict(X_lstm[-1].reshape(1, X_lstm.shape[1], 1))
+            lstm_pred = lstm_model.predict(last_row_lstm)
 
             # Predict using XGBoost
-            xgb_pred = xgb_model.predict(X_selected[-1].reshape(1, -1))
+            xgb_pred = xgb_model.predict(last_row_xgb.reshape(1, -1))
 
             st.write("### Prediction")
             st.write(f"Predicted Next Close Price: ${xgb_pred[0]:.2f}")
