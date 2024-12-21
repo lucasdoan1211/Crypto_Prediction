@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf
 import joblib
 from tensorflow.keras.models import load_model
+from tensorflow.keras.losses import MeanSquaredError
 from xgboost import XGBRegressor
 from sklearn.preprocessing import RobustScaler
 import numpy as np
@@ -10,8 +11,10 @@ from datetime import datetime, timedelta
 FEATURES = ['Open', 'High', 'Low', 'Close', 'Volume', '52_Week_High', '52_Week_Low', 'Market_Cap', 'Beta', 'Dividend_Yield']
 
 # Function to fetch stock data
-def fetch_stock_data(ticker, start_date, end_date):
-    data = yf.download(ticker, start=start_date, end=end_date)
+def fetch_stock_data(ticker):
+    end_date = datetime.today()
+    start_date = end_date - timedelta(days=6*30)  # Fetch ~6 months of data
+    data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
     data.reset_index(inplace=True)
 
     stock = yf.Ticker(ticker)
@@ -29,20 +32,20 @@ def fetch_stock_data(ticker, start_date, end_date):
 def main():
     st.title("Stock Price Prediction App")
     
+    # Simplified interface: user enters ticker only
     ticker = st.text_input("Enter Stock Ticker (e.g., AAPL):", "AAPL")
-    start_date = st.date_input("Start Date:", datetime.today() - timedelta(days=6*30))
-    end_date = st.date_input("End Date:", datetime.today())
 
     if st.button("Predict"):
         try:
-            data = fetch_stock_data(ticker, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            # Fetch stock data
+            data = fetch_stock_data(ticker)
             st.write("Fetched Data", data.tail())
 
             # Prepare features for prediction
             X_next_day = data[FEATURES].iloc[-1:].values
 
             # Load models and scaler
-            lstm_model = load_model("lstm_model.h5")
+            lstm_model = load_model("lstm_model.h5", custom_objects={"MeanSquaredError": MeanSquaredError})
             xgb_model = XGBRegressor()
             xgb_model.load_model("xgb_model.json")
             ridge_model = joblib.load("ridge_model.pkl")
