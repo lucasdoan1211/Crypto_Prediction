@@ -5,7 +5,9 @@ import joblib
 from tensorflow.keras.models import load_model
 from datetime import datetime, timedelta
 import yfinance as yf
-from tensorflow.keras.losses import MeanSquaredError
+from ta.volatility import BollingerBands
+from ta.momentum import RSIIndicator
+from ta.trend import SMAIndicator, EMAIndicator
 
 # Load models and scaler
 @st.cache_resource
@@ -28,17 +30,19 @@ def create_features(data):
     data['Date'] = pd.to_datetime(data['Date'])
     data.set_index('Date', inplace=True)
 
-    data['SMA_7'] = data['Close'].rolling(window=7).mean()
-    data['SMA_30'] = data['Close'].rolling(window=30).mean()
-    data['EMA_7'] = data['Close'].ewm(span=7).mean()
-    data['EMA_30'] = data['Close'].ewm(span=30).mean()
+    data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
+    data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
+    data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
+    data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
 
-    data['RSI_14'] = (100 - (100 / (1 + data['Close'].diff().clip(lower=0).rolling(14).mean() /
-                                     (-data['Close'].diff().clip(upper=0).rolling(14).mean()))))
+    data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
 
-    data['BB_High'] = data['Close'].rolling(20).mean() + 2 * data['Close'].rolling(20).std()
-    data['BB_Low'] = data['Close'].rolling(20).mean() - 2 * data['Close'].rolling(20).std()
+    bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
+    data['BB_High'] = bb_indicator.bollinger_hband()
+    data['BB_Low'] = bb_indicator.bollinger_lband()
     data['BB_Width'] = data['BB_High'] - data['BB_Low']
+
+    data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14)
 
     lags = [1, 3, 7]
     for lag in lags:
