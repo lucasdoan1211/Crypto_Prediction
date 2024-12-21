@@ -93,7 +93,10 @@ def main():
             st.write(f"**Ridge Prediction:** {ridge_prediction:.2f}")
 
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            if "mse" in str(e):
+                st.error("An error occurred with the loss function. Ensure the model uses a valid loss function registered with Keras.")
+            else:
+                st.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     main()
