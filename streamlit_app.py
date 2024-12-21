@@ -6,6 +6,10 @@ from sklearn.preprocessing import RobustScaler
 from tensorflow.keras.models import load_model
 import joblib
 from xgboost import XGBRegressor
+import ta  
+from ta.volatility import BollingerBands
+from ta.momentum import RSIIndicator
+from ta.trend import SMAIndicator, EMAIndicator
 
 # Load saved models and preprocessing objects
 scaler = joblib.load("scaler.pkl")
