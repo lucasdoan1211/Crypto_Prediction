@@ -3,7 +3,7 @@ import yfinance as yf
 import joblib
 from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import MeanSquaredError
-from xgboost.sklearn import XGBRegressor
+from xgboost import XGBRegressor
 from sklearn.preprocessing import RobustScaler
 from datetime import datetime, timedelta
 
