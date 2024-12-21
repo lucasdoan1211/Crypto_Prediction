@@ -7,13 +7,11 @@ from xgboost.sklearn import XGBRegressor
 from sklearn.preprocessing import RobustScaler
 from datetime import datetime, timedelta
 
-# Define features globally
 FEATURES = ['Open', 'High', 'Low', 'Close', 'Volume', '52_Week_High', '52_Week_Low', 'Market_Cap', 'Beta', 'Dividend_Yield']
 
-# Function to fetch stock data
 def fetch_stock_data(ticker):
     end_date = datetime.today()
-    start_date = end_date - timedelta(days=6*30)  # Fetch ~6 months of data
+    start_date = end_date - timedelta(days=6*30)
     data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
     data.reset_index(inplace=True)
 
@@ -28,7 +26,6 @@ def fetch_stock_data(ticker):
 
     return data
 
-# Streamlit Deployment
 def main():
     st.title("Stock Price Prediction App")
     
@@ -37,22 +34,17 @@ def main():
     if st.button("Predict"):
         try:
             data = fetch_stock_data(ticker)
-
-            # Prepare features for prediction
             X_next_day = data[FEATURES].iloc[-1:].values
 
-            # Load models and scaler
             lstm_model = load_model("lstm_model.h5", custom_objects={"MeanSquaredError": MeanSquaredError})
             xgb_model = XGBRegressor()
             xgb_model.load_model("xgb_model.json")
             ridge_model = joblib.load("ridge_model.pkl")
             scaler = joblib.load("scaler.pkl")
 
-            # Scale data
             X_next_day_scaled = scaler.transform(X_next_day)
             X_next_day_lstm = X_next_day_scaled.reshape((X_next_day_scaled.shape[0], X_next_day_scaled.shape[1], 1))
 
-            # Predict next day's price
             lstm_prediction = lstm_model.predict(X_next_day_lstm, verbose=0).flatten()[0]
             xgb_prediction = xgb_model.predict(X_next_day_scaled).flatten()[0]
             ridge_prediction = ridge_model.predict(X_next_day_scaled).flatten()[0]
