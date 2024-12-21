@@ -84,12 +84,17 @@ if st.button("Predict Next Day Price"):
                 # Use the feature selector to choose optimal features
                 X_selected = X_scaled[:, feature_selector.support_]
 
+                # Ensure X_selected[-1] is a 1D array for predictions
+                last_row = X_selected[-1]
+                if last_row.ndim != 1:
+                    last_row = last_row.flatten()
+
                 # Prepare input for LSTM
-                X_lstm = X_selected[-1].reshape(1, X_selected.shape[1], 1)
+                X_lstm = last_row.reshape(1, -1, 1)
 
                 # Predictions
-                xgb_pred = xgb_model.predict(X_selected[-1].reshape(1, -1))[0]
-                ridge_pred = ridge_model.predict(X_selected[-1].reshape(1, -1))[0]
+                xgb_pred = xgb_model.predict(last_row.reshape(1, -1))[0]
+                ridge_pred = ridge_model.predict(last_row.reshape(1, -1))[0]
                 lstm_pred = lstm_model.predict(X_lstm)[0][0]
 
                 # Display predictions
