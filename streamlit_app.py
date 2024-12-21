@@ -30,10 +30,11 @@ if st.button("Predict Next Day Price"):
     data = yf.download(ticker, start=start_date, end=end_date)
 
     if not data.empty:
-        # Reset index to ensure proper column access
-        data.reset_index(inplace=True)
+        # Ensure `data` is a valid DataFrame with expected columns
+        if isinstance(data, pd.DataFrame) and 'Close' in data.columns:
+            # Reset index to ensure proper column access
+            data.reset_index(inplace=True)
 
-        if 'Close' in data.columns:
             # Ensure 'Close' column is numeric
             data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
             data['Close'].fillna(method='bfill', inplace=True)
@@ -84,6 +85,6 @@ if st.button("Predict Next Day Price"):
             st.write(f"**Ridge Model:** ${ridge_pred:.2f}")
             st.write(f"**LSTM Model:** ${lstm_pred:.2f}")
         else:
-            st.write("The dataset does not contain the required 'Close' column.")
+            st.write("The dataset is not structured as expected or is missing the 'Close' column.")
     else:
         st.write("Failed to retrieve data. Please check the ticker symbol.")
