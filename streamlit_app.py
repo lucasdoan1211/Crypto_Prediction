@@ -6,9 +6,8 @@ from tensorflow.keras.losses import MeanSquaredError
 from xgboost import XGBRegressor
 from sklearn.preprocessing import RobustScaler
 from datetime import datetime, timedelta
-import numpy as np
 
-# Define features globally for consistency
+# Define features globally
 FEATURES = ['Open', 'High', 'Low', 'Close', 'Volume', '52_Week_High', '52_Week_Low', 'Market_Cap', 'Beta', 'Dividend_Yield']
 
 # Function to fetch stock data
@@ -18,7 +17,6 @@ def fetch_stock_data(ticker):
     data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
     data.reset_index(inplace=True)
 
-    # Add additional features from Yahoo Finance
     stock = yf.Ticker(ticker)
     info = stock.info
 
@@ -34,12 +32,10 @@ def fetch_stock_data(ticker):
 def main():
     st.title("Stock Price Prediction App")
     
-    # Simplified interface: user enters ticker only
     ticker = st.text_input("Enter Stock Ticker (e.g., AAPL):", "AAPL")
 
     if st.button("Predict"):
         try:
-            # Fetch stock data
             data = fetch_stock_data(ticker)
 
             # Prepare features for prediction
@@ -61,7 +57,6 @@ def main():
             xgb_prediction = xgb_model.predict(X_next_day_scaled).flatten()[0]
             ridge_prediction = ridge_model.predict(X_next_day_scaled).flatten()[0]
 
-            # Display predictions
             st.subheader("Predicted Next Day Close Price:")
             st.write(f"LSTM Model: {lstm_prediction:.2f}")
             st.write(f"XGBoost Model: {xgb_prediction:.2f}")
