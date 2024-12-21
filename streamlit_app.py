@@ -30,6 +30,10 @@ if st.button("Predict Next Day Price"):
     data = yf.download(ticker, start=start_date, end=end_date)
 
     if not data.empty:
+        # Ensure 'Close' column is numeric
+        data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
+        data['Close'].fillna(method='bfill', inplace=True)
+
         # Feature engineering
         data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
         data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
