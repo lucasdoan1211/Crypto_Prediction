@@ -56,17 +56,13 @@ def main():
     # Feature engineering
     data = feature_engineering(data)
 
-    # Display raw data
-    st.write(f"Data for {ticker}")
-    st.dataframe(data)
-
     # Load pre-trained artifacts
     scaler = joblib.load("scaler.pkl")
     ridge_model = joblib.load("model_ridge.pkl")
 
-    # Define features used for prediction
+    # Define features used for prediction (excluding 'Adj Close' which is missing)
     features = [
-        'Open', 'High', 'Low', 'Adj Close', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30', 'RSI_14',
+        'Open', 'High', 'Low', 'Volume', 'SMA_7', 'SMA_30', 'EMA_7', 'EMA_30', 'RSI_14',
         'BB_High', 'BB_Low', 'BB_Width', 'ATR', 'Close_Lag_1', 'Close_Lag_3', 'Close_Lag_7',
         'Volume_Lag_1', 'Volume_Lag_3', 'Volume_Lag_7', 'Rolling_Mean_7', 'Rolling_Std_7',
         'Daily_Return', 'Log_Return'
@@ -88,13 +84,10 @@ def main():
     latest_features = X_scaled[-1].reshape(1, -1)
     next_day_close = ridge_model.predict(latest_features)[0]
 
-    # Display prediction
-    st.write("Predicted Next Day Close Price")
-    st.metric(label="Next Day Close", value=f"${next_day_close:.2f}")
-
-    # Plot actual vs predicted
-    data['Predicted_Close'] = ridge_model.predict(X_scaled)
-    st.line_chart(data[['Close', 'Predicted_Close']])
+    # Button for prediction
+    if st.button("Predict Next Day Close"):
+        st.write("Predicted Next Day Close Price")
+        st.metric(label="Next Day Close", value=f"${next_day_close:.2f}")
 
 if __name__ == "__main__":
     main()
