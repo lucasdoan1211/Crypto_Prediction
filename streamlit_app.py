@@ -1,61 +1,68 @@
 import streamlit as st
 import yfinance as yf
-import joblib
-from tensorflow.keras.models import load_model
-from tensorflow.keras.losses import MeanSquaredError
-from xgboost import XGBRegressor
-from sklearn.preprocessing import RobustScaler
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
 from datetime import datetime, timedelta
+import numpy as np
 
-FEATURES = ['Open', 'High', 'Low', 'Close', 'Volume', '52_Week_High', '52_Week_Low', 'Market_Cap', 'Beta', 'Dividend_Yield']
-
-def fetch_stock_data(ticker):
-    end_date = datetime.today()
-    start_date = end_date - timedelta(days=6*30)
-    data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
-    data.reset_index(inplace=True)
-
-    stock = yf.Ticker(ticker)
-    info = stock.info
-
-    data['52_Week_High'] = info.get('fiftyTwoWeekHigh', 0)
-    data['52_Week_Low'] = info.get('fiftyTwoWeekLow', 0)
-    data['Market_Cap'] = info.get('marketCap', 0)
-    data['Beta'] = info.get('beta', 0)
-    data['Dividend_Yield'] = info.get('dividendYield', 0)
-
+# Function to retrieve stock data
+def get_stock_data(ticker, period="6mo"):
+    data = yf.download(ticker, period=period)
     return data
 
-def main():
-    st.title("Stock Price Prediction App")
-    
-    ticker = st.text_input("Enter Stock Ticker (e.g., AAPL):", "AAPL")
+# Function to train a simple linear regression model
+def train_model(data):
+    data["Next_Close"] = data["Close"].shift(-1)
+    data = data.dropna()
 
-    if st.button("Predict"):
-        try:
-            data = fetch_stock_data(ticker)
-            X_next_day = data[FEATURES].iloc[-1:].values
+    X = data[["Close"]].values
+    y = data["Next_Close"].values
 
-            lstm_model = load_model("lstm_model.h5", custom_objects={"MeanSquaredError": MeanSquaredError})
-            xgb_model = XGBRegressor()
-            xgb_model.load_model("xgb_model.json")
-            ridge_model = joblib.load("ridge_model.pkl")
-            scaler = joblib.load("scaler.pkl")
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-            X_next_day_scaled = scaler.transform(X_next_day)
-            X_next_day_lstm = X_next_day_scaled.reshape((X_next_day_scaled.shape[0], X_next_day_scaled.shape[1], 1))
+    model = LinearRegression()
+    model.fit(X_train, y_train)
 
-            lstm_prediction = lstm_model.predict(X_next_day_lstm, verbose=0).flatten()[0]
-            xgb_prediction = xgb_model.predict(X_next_day_scaled).flatten()[0]
-            ridge_prediction = ridge_model.predict(X_next_day_scaled).flatten()[0]
+    y_pred = model.predict(X_test)
+    rmse = mean_squared_error(y_test, y_pred, squared=False)
 
-            st.subheader("Predicted Next Day Close Price:")
-            st.write(f"LSTM Model: {lstm_prediction:.2f}")
-            st.write(f"XGBoost Model: {xgb_prediction:.2f}")
-            st.write(f"Ridge Model: {ridge_prediction:.2f}")
+    return model, rmse
 
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+# Predict the next day's price
+def predict_next_day(model, last_close):
+    return model.predict(np.array([[last_close]]))[0]
 
-if __name__ == "__main__":
-    main()
+# Streamlit app
+st.title("Stock Price Prediction App")
+st.write("Retrieve 6 months of stock data and predict the next day's closing price.")
+
+# Input for the stock ticker symbol
+ticker = st.text_input("Enter the stock ticker (e.g., AAPL, TSLA):", value="AAPL")
+
+if st.button("Predict"):
+    try:
+        # Fetch data
+        st.write("Fetching data for ticker:", ticker)
+        data = get_stock_data(ticker)
+
+        if data.empty:
+            st.error("No data found for the ticker symbol. Please check and try again.")
+        else:
+            st.write("Data Retrieved Successfully!")
+            st.write(data.tail())
+
+            # Train model
+            st.write("Training the model...")
+            model, rmse = train_model(data)
+
+            st.write(f"Model trained. RMSE: {rmse:.2f}")
+
+            # Predict next day's price
+            last_close = data["Close"].iloc[-1]
+            next_day_price = predict_next_day(model, last_close)
+
+            st.write(f"The predicted next day's closing price for {ticker} is: ${next_day_price:.2f}")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
