@@ -32,15 +32,17 @@ if st.button("Predict"):
         if data.empty:
             st.error("No data found for the provided ticker. Please check the symbol and try again.")
         else:
-            data = data.reset_index()
+            # Ensure 'data' is a DataFrame and reset index
+            data = pd.DataFrame(data).reset_index()
 
-            # Ensure the 'Close' column exists and is numeric
+            # Check if 'Close' exists
             if 'Close' in data.columns:
+                # Convert 'Close' to numeric
                 data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
                 if data['Close'].isnull().all():
                     st.error("The 'Close' column contains invalid data. Cannot proceed with prediction.")
                 else:
-                    # Fill missing values for indicators to function correctly
+                    # Fill missing values
                     data['Close'].fillna(method='ffill', inplace=True)
                     data['Close'].fillna(method='bfill', inplace=True)
 
