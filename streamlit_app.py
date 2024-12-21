@@ -58,8 +58,10 @@ st.title("Crypto Price Prediction App")
 # Sidebar
 st.sidebar.header("User Input")
 ticker = st.sidebar.text_input("Enter Crypto Ticker (e.g., ONDO-USD)", "ONDO-USD")
-start_date = st.sidebar.date_input("Start Date", date(2024, 1, 14))
-end_date = st.sidebar.date_input("End Date", date.today())
+# Set end_date to today and calculate start_date as 6 months before
+end_date = date.today()
+start_date = end_date - timedelta(days=6*30) # Approximately 6 months
+
 prediction_days = st.sidebar.number_input("Prediction Days", min_value=1, max_value=30, value=7)
 selected_model = st.sidebar.selectbox("Select Model", ["LSTM", "XGBoost", "Ridge"])
 
