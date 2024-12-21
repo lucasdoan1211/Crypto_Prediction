@@ -6,10 +6,7 @@ from sklearn.preprocessing import RobustScaler
 from tensorflow.keras.models import load_model
 import joblib
 from xgboost import XGBRegressor
-import ta  
-from ta.volatility import BollingerBands
-from ta.momentum import RSIIndicator
-from ta.trend import SMAIndicator, EMAIndicator
+import ta  # Import for technical analysis
 
 # Load saved models and preprocessing objects
 scaler = joblib.load("scaler.pkl")
@@ -80,9 +77,8 @@ def main():
             # Predict using XGBoost
             xgb_pred = xgb_model.predict(X_selected[-1].reshape(1, -1))
 
-            st.write("### Predictions")
-            st.write(f"LSTM Model Prediction for Next Close: ${lstm_pred[0][0]:.2f}")
-            st.write(f"XGBoost Model Prediction for Next Close: ${xgb_pred[0]:.2f}")
+            st.write("### Prediction")
+            st.write(f"Predicted Next Close Price: ${xgb_pred[0]:.2f}")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
