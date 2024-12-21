@@ -85,5 +85,3 @@ if st.button("Predict"):
             st.write(f"XGBoost Prediction: {xgb_pred[-1]:.2f}")
             st.write(f"Ridge Regression Prediction: {ridge_pred[-1]:.2f}")
             st.write(f"LSTM Prediction: {lstm_pred[-1][0]:.2f}")
-        else:
-            st.error("The 'Close' column is missing from the data. Cannot proceed with prediction.")
