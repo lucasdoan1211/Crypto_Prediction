@@ -5,9 +5,10 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import MeanSquaredError
 from xgboost import XGBRegressor
 from sklearn.preprocessing import RobustScaler
-import numpy as np
 from datetime import datetime, timedelta
+import numpy as np
 
+# Define features globally for consistency
 FEATURES = ['Open', 'High', 'Low', 'Close', 'Volume', '52_Week_High', '52_Week_Low', 'Market_Cap', 'Beta', 'Dividend_Yield']
 
 # Function to fetch stock data
@@ -17,6 +18,7 @@ def fetch_stock_data(ticker):
     data = yf.download(ticker, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'))
     data.reset_index(inplace=True)
 
+    # Add additional features from Yahoo Finance
     stock = yf.Ticker(ticker)
     info = stock.info
 
@@ -39,7 +41,6 @@ def main():
         try:
             # Fetch stock data
             data = fetch_stock_data(ticker)
-            st.write("Fetched Data", data.tail())
 
             # Prepare features for prediction
             X_next_day = data[FEATURES].iloc[-1:].values
@@ -55,15 +56,16 @@ def main():
             X_next_day_scaled = scaler.transform(X_next_day)
             X_next_day_lstm = X_next_day_scaled.reshape((X_next_day_scaled.shape[0], X_next_day_scaled.shape[1], 1))
 
-            # Predict
+            # Predict next day's price
             lstm_prediction = lstm_model.predict(X_next_day_lstm, verbose=0).flatten()[0]
             xgb_prediction = xgb_model.predict(X_next_day_scaled).flatten()[0]
             ridge_prediction = ridge_model.predict(X_next_day_scaled).flatten()[0]
 
+            # Display predictions
             st.subheader("Predicted Next Day Close Price:")
-            st.write(f"LSTM Model: {lstm_prediction}")
-            st.write(f"XGBoost Model: {xgb_prediction}")
-            st.write(f"Ridge Model: {ridge_prediction}")
+            st.write(f"LSTM Model: {lstm_prediction:.2f}")
+            st.write(f"XGBoost Model: {xgb_prediction:.2f}")
+            st.write(f"Ridge Model: {ridge_prediction:.2f}")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
