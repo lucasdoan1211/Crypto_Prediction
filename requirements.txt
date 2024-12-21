@@ -7,3 +7,4 @@ tensorflow
 joblib
 xgboost
 ta
+plotly
