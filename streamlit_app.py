@@ -72,15 +72,16 @@ def predict_next_day_price(lstm_model, xgb_model, ridge_model, X_next_day_scaled
     X_next_day_lstm = X_next_day_scaled.reshape((X_next_day_scaled.shape[0], X_next_day_scaled.shape[1], 1))
 
     # Predict using all models
-    lstm_prediction = lstm_model.predict(X_next_day_lstm, verbose=0).flatten()[0]
-    xgb_prediction = xgb_model.predict(X_next_day_scaled).flatten()[0]
-    ridge_prediction = ridge_model.predict(X_next_day_scaled).flatten()[0]
+    lstm_prediction = lstm_model.predict(X_next_day_lstm, verbose=0).flatten()[0]  # Ensure scalar
+    xgb_prediction = xgb_model.predict(X_next_day_scaled).flatten()[0]  # Ensure scalar
+    ridge_prediction = ridge_model.predict(X_next_day_scaled).flatten()[0]  # Ensure scalar
 
     return {
         "LSTM": lstm_prediction,
         "XGBoost": xgb_prediction,
         "Ridge": ridge_prediction
     }
+
 
 # Streamlit app
 def main():
