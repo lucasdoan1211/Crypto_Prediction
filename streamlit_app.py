@@ -50,7 +50,9 @@ if st.button("Predict Next Day Price"):
                 data['BB_High'] = bb_indicator.bollinger_hband()
                 data['BB_Low'] = bb_indicator.bollinger_lband()
                 data['BB_Width'] = data['BB_High'] - data['BB_Low']
-                data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14)
+                data['ATR'] = ta.volatility.average_true_range(
+                    high=data['High'], low=data['Low'], close=data['Close'], window=14
+                )
                 for lag in [1, 3, 7]:
                     data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
                     data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
@@ -70,8 +72,13 @@ if st.button("Predict Next Day Price"):
 
                 X = data[features]
 
+                # Validate feature matrix
+                if X.isnull().values.any():
+                    st.write("Feature matrix contains NaN values. Please check feature engineering.")
+                    raise ValueError("Feature matrix contains NaN values.")
+
                 # Convert to NumPy array and apply scaling
-                X_np = X.to_numpy()  # Ensure X is a NumPy array
+                X_np = X.to_numpy()
                 X_scaled = scaler.transform(X_np)
 
                 # Use the feature selector to choose optimal features
