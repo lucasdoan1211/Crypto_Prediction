@@ -63,6 +63,7 @@ def predict_next_day_price(ticker):
     X_latest = preprocess_data(data)
 
     # Predict using the XGBoost model
+    # Reshape to (1, number of features) - Corrected reshaping
     prediction = xgb_model.predict(X_latest[-1].reshape(1, -1))
 
     return prediction[0]
