@@ -26,7 +26,7 @@ def train_model(data):
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    rmse = mean_squared_error(y_test, y_pred, squared=False)
+    rmse = mean_squared_error(y_test, y_pred) ** 0.5  # Fixed RMSE calculation
 
     return model, rmse
 
