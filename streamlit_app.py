@@ -27,28 +27,35 @@ def create_features(data):
     data['Date'] = pd.to_datetime(data['Date'])
     data.set_index('Date', inplace=True)
 
-    # Feature Engineering (Force 1D array output)
-    data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator().fillna(0).values.ravel()
-    data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator().fillna(0).values.ravel()
-    data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator().fillna(0).values.ravel()
-    data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator().fillna(0).values.ravel()
-    data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi().fillna(0).values.ravel()
+    # Correctly create new columns from indicators
+    data['SMA_7'] = SMAIndicator(close=data['Close'], window=7).sma_indicator()
+    data['SMA_30'] = SMAIndicator(close=data['Close'], window=30).sma_indicator()
+    data['EMA_7'] = EMAIndicator(close=data['Close'], window=7).ema_indicator()
+    data['EMA_30'] = EMAIndicator(close=data['Close'], window=30).ema_indicator()
+    data['RSI_14'] = RSIIndicator(close=data['Close'], window=14).rsi()
+
     bb_indicator = BollingerBands(close=data['Close'], window=20, window_dev=2)
-    data['BB_High'] = bb_indicator.bollinger_hband().fillna(0).values.ravel()
-    data['BB_Low'] = bb_indicator.bollinger_lband().fillna(0).values.ravel()
+    data['BB_High'] = bb_indicator.bollinger_hband()
+    data['BB_Low'] = bb_indicator.bollinger_lband()
     data['BB_Width'] = data['BB_High'] - data['BB_Low']
-    data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14).fillna(0).values.ravel()
+
+    data['ATR'] = ta.volatility.average_true_range(high=data['High'], low=data['Low'], close=data['Close'], window=14)
+
     lags = [1, 3, 7]
     for lag in lags:
         data[f'Close_Lag_{lag}'] = data['Close'].shift(lag)
         data[f'Volume_Lag_{lag}'] = data['Volume'].shift(lag)
+
     data['Rolling_Mean_7'] = data['Close'].rolling(window=7).mean()
     data['Rolling_Std_7'] = data['Close'].rolling(window=7).std()
     data['Daily_Return'] = data['Close'].pct_change()
     data['Log_Return'] = np.log(data['Close'] / data['Close'].shift(1))
 
+    # Fill NaN values appropriately
+    data.fillna(method='bfill', inplace=True)  # Use bfill to fill indicator NaNs
+    data.fillna(0, inplace=True)  # Fill remaining NaNs with 0
+
     data.reset_index(inplace=True)
-    data = data.fillna(data.median())
     return data
 
 # Function for next-day prediction
@@ -92,37 +99,3 @@ def main():
                 optimal_features = joblib.load("optimal_features.pkl")
 
                 with st.spinner('Predicting...'):
-                    # Prepare the data for prediction
-                    X_next_day = data[optimal_features].iloc[-1:]
-                    lstm_pred, xgb_pred, ridge_pred = predict_next_day(X_next_day, lstm_model, xgb_model, ridge_model, scaler)
-
-                    # Display predictions
-                    last_close_price = data['Close'].iloc[-1]
-                    lstm_diff = lstm_pred - last_close_price
-                    xgb_diff = xgb_pred - last_close_price
-                    ridge_diff = ridge_pred - last_close_price
-                    
-                    lstm_color = "green" if lstm_diff > 0 else "red"
-                    xgb_color = "green" if xgb_diff > 0 else "red"
-                    ridge_color = "green" if ridge_diff > 0 else "red"
-                    
-                    fig = go.Figure()
-                    fig.add_hline(y=last_close_price, line_dash="dot",
-                                  annotation_text="Last Close Price", annotation_position="bottom right")
-                    fig.add_annotation(x=0.1, y=lstm_pred, text=f'LSTM: {lstm_pred:.2f}',
-                                       showarrow=True, arrowhead=5, arrowcolor=lstm_color, ax=0, ay=-40)
-                    fig.add_annotation(x=0.5, y=xgb_pred, text=f'XGBoost: {xgb_pred:.2f}',
-                                       showarrow=True, arrowhead=5, arrowcolor=xgb_color, ax=0, ay=-40)
-                    fig.add_annotation(x=0.9, y=ridge_pred, text=f'Ridge: {ridge_pred:.2f}',
-                                       showarrow=True, arrowhead=5, arrowcolor=ridge_color, ax=0, ay=-40)
-                    fig.update_layout(title='Next Day Price Predictions',
-                                      yaxis_title='Price',
-                                      xaxis_title='Models',
-                                      showlegend=False)
-                    st.plotly_chart(fig)
-
-            except FileNotFoundError:
-                st.error("Model files not found. Please train the models first.")
-
-if __name__ == "__main__":
-    main()
