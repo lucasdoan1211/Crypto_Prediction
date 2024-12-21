@@ -58,18 +58,29 @@ def load_models_and_scaler():
     optimal_features = joblib.load("optimal_features.pkl")
     return lstm_model, xgb_model, ridge_model, scaler, optimal_features
 
+# Function to match columns
+def match_columns(data, optimal_features):
+    # Add missing columns with zeros
+    for feature in optimal_features:
+        if feature not in data.columns:
+            data[feature] = 0
+
+    # Ensure only optimal features are present
+    return data[optimal_features]
+
 # Function to prepare the input for prediction
 def prepare_input_for_prediction(data, scaler, optimal_features):
-    # Select only optimal features
-    X_next_day = data[optimal_features].iloc[-1:]  # Get the last row
-    # Scale the features
+    # Match columns
+    data = match_columns(data, optimal_features)
+    # Select the last row and scale
+    X_next_day = data.iloc[-1:]  # Get the last row
     X_next_day_scaled = scaler.transform(X_next_day)
     return X_next_day, X_next_day_scaled
 
 # Function to make predictions
 def predict_next_day_price(lstm_model, xgb_model, ridge_model, X_next_day_scaled):
     # Prepare data for LSTM model
-    X_next_day_lstm = X_next_day_scaled.reshape((X_next_day_scaled.shape[0], X_next_day_scaled.shape[1], 1))
+    X_next_day_lstm = X_next_day_scaled.reshape((1, X_next_day_scaled.shape[1], 1))  # Reshape for LSTM
 
     # Predict using all models
     lstm_prediction = lstm_model.predict(X_next_day_lstm, verbose=0).flatten()[0]  # Ensure scalar
@@ -81,7 +92,6 @@ def predict_next_day_price(lstm_model, xgb_model, ridge_model, X_next_day_scaled
         "XGBoost": xgb_prediction,
         "Ridge": ridge_prediction
     }
-
 
 # Streamlit app
 def main():
