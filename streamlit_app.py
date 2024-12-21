@@ -5,6 +5,7 @@ import joblib
 from tensorflow.keras.models import load_model
 from datetime import datetime, timedelta
 import yfinance as yf
+from tensorflow.keras.losses import MeanSquaredError
 
 # Load models and scaler
 @st.cache_resource
